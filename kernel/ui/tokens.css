@@ -1,0 +1,198 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap");
+
+:root {
+  /* 4px spacing scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+
+  --row-h: 32px;
+
+  --ink: #16161a; /* near-black */
+  --paper: #faf9f6; /* off-white */
+  --muted: #6b6b70;
+  --line: #e4e2dc;
+  --signal: #c73030; /* the one signal color, destructive only */
+
+  --font: "Inter Tight", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 14px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+table.k-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table.k-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 0 var(--s-2);
+  height: var(--row-h);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+table.k-table td {
+  padding: 0 var(--s-2);
+  height: var(--row-h);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+table.k-table tr[data-selected="true"] {
+  background: #efede7;
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+table.k-table tbody tr {
+  cursor: default;
+}
+
+.k-actionrail {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  padding: var(--s-2) 0;
+}
+
+button.k-btn {
+  font: inherit;
+  height: 24px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button.k-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+button.k-btn:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--paper);
+  cursor: not-allowed;
+}
+
+button.k-btn.destructive {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+button.k-btn.destructive:hover {
+  background: var(--signal);
+  color: var(--paper);
+}
+
+.k-filterbar {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  align-items: center;
+}
+
+.k-filterbar select,
+.k-filterbar input {
+  font: inherit;
+  height: 24px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0 var(--s-2);
+}
+
+.masked {
+  font: inherit;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  padding: 0;
+}
+
+.masked:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 var(--s-1);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.badge[data-status="pending"] { color: var(--muted); }
+.badge[data-status="recommended"] { color: #8a6d00; border-color: #d9c77a; }
+.badge[data-status="approved"] { color: #1f6b3a; border-color: #9cc7ab; }
+.badge[data-status="rejected"] { color: var(--signal); border-color: var(--signal); }
+.badge[data-status="settled"] { color: #1f4c6b; border-color: #9cb6c7; }
+.badge[data-status="failed"] { color: var(--signal); border-color: var(--signal); }
+
+.kbd {
+  border: 1px solid var(--line);
+  padding: 0 var(--s-1);
+  font-size: 11px;
+  color: var(--muted);
+  background: #fff;
+}
+
+main.k-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4);
+}
+
+nav.k-nav {
+  display: flex;
+  gap: var(--s-4);
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding: var(--s-3) var(--s-4);
+}
+
+nav.k-nav a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+nav.k-nav a:hover {
+  text-decoration: underline;
+}
+
+nav.k-nav .spacer {
+  flex: 1;
+}
+
+nav.k-nav .who {
+  color: var(--muted);
+  font-size: 12px;
+}
