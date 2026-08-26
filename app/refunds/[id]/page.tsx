@@ -47,14 +47,8 @@ export default async function RefundDetail({
             </td>
           </tr>
           <tr>
-            <td>card last4</td>
-            <td>
-              <Masked
-                entityType="refund_request"
-                entityId={row.id}
-                field="card_last4"
-              />
-            </td>
+            <td>card</td>
+            <td className="mono">•••• {row.cardLast4}</td>
           </tr>
           <tr>
             <td>billing address</td>
@@ -68,7 +62,7 @@ export default async function RefundDetail({
           </tr>
           <tr>
             <td>idempotency key</td>
-            <td>{row.idempotencyKey}</td>
+            <td className="mono">{row.idempotencyKey}</td>
           </tr>
           <tr>
             <td>created</td>

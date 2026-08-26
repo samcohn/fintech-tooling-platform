@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { REDACTED_VALUE } from "./redact";
 
 type Props = {
@@ -8,24 +8,28 @@ type Props = {
   entityId: string;
   field: string;
   unmaskEndpoint?: string;
+  /** Increment to trigger an unmask from a keystroke. */
+  unmaskSignal?: number;
 };
 
 /**
- * Renders redacted by default. Unmasking calls the app's unmask route,
- * which writes an audit row naming the actor and field before the value
- * is revealed.
+ * Renders redacted by default. Unmasking is an explicit click or
+ * keystroke (never hover) and calls the app's unmask route, which
+ * writes an audit row naming the actor and field before the value is
+ * revealed. A revealed field keeps a persistent marker.
  */
 export function Masked({
   entityType,
   entityId,
   field,
   unmaskEndpoint = "/api/unmask",
+  unmaskSignal = 0,
 }: Props) {
   const [value, setValue] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const lastSignal = useRef(unmaskSignal);
 
-  async function unmask(e: React.MouseEvent) {
-    e.stopPropagation();
+  async function unmask() {
     if (value !== null || loading) return;
     setLoading(true);
     try {
@@ -43,13 +47,25 @@ export function Masked({
     }
   }
 
-  if (value !== null) return <span className="masked-revealed">{value}</span>;
+  useEffect(() => {
+    if (unmaskSignal > lastSignal.current) {
+      lastSignal.current = unmaskSignal;
+      void unmask();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unmaskSignal]);
+
+  if (value !== null)
+    return <span className="masked-revealed">{value}</span>;
 
   return (
     <button
       type="button"
       className="masked"
-      onClick={unmask}
+      onClick={(e) => {
+        e.stopPropagation();
+        void unmask();
+      }}
       title={`Unmask ${field} (audited)`}
     >
       {loading ? "…" : REDACTED_VALUE}

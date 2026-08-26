@@ -10,3 +10,15 @@ export const piiFields = [
 ] as const;
 
 export type PiiField = (typeof piiFields)[number];
+
+/**
+ * Fields whose stored value is already a display-safe partial (e.g. the
+ * last four card digits). These render unmasked so agents can reconcile
+ * against customer conversations; full-value fields stay redacted.
+ */
+export const partialFields: readonly PiiField[] = ["card_last4"];
+
+/** Fields that must be redacted in every list/API response. */
+export const redactedFields = piiFields.filter(
+  (f) => !partialFields.includes(f)
+);

@@ -5,7 +5,7 @@ import { redactAll } from "@kernel/mask/redact";
 import { canCommit, approvalThresholdCents, type Transition } from "@kernel/rbac";
 import type { Actor } from "@kernel/auth";
 import { canTransition } from "./machine";
-import { piiFields } from "./pii";
+import { redactedFields } from "./pii";
 
 export type RefundDto = {
   id: string;
@@ -22,6 +22,8 @@ export type RefundDto = {
   created_at: string;
   /** Server-resolved: which transitions this actor may commit. */
   actions: Transition[];
+  /** Server-resolved reason when no action is available. */
+  unavailable_reason: string | null;
 };
 
 const ALL: Transition[] = ["recommend", "approve", "reject", "settle", "fail"];
@@ -59,6 +61,16 @@ export async function listRefunds(
         // the action list unambiguous.
         !(t === "recommend" && r.status !== "pending")
     );
+    let unavailableReason: string | null = null;
+    if (actions.length === 0) {
+      if (r.status === "recommended" && r.recommendedBy === actor.id) {
+        unavailableReason = "own recommendation";
+      } else if (r.status === "recommended") {
+        unavailableReason = "awaiting approver";
+      } else if (["rejected", "settled", "failed"].includes(r.status)) {
+        unavailableReason = "closed";
+      }
+    }
     return {
       id: r.id,
       charge_id: r.chargeId,
@@ -73,11 +85,12 @@ export async function listRefunds(
       recommended_by_name: recommenderName,
       created_at: r.createdAt.toISOString(),
       actions,
+      unavailable_reason: unavailableReason,
     };
   });
 
   return {
-    rows: redactAll(dtos, piiFields),
+    rows: redactAll(dtos, redactedFields),
     thresholdCents: approvalThresholdCents(),
   };
 }

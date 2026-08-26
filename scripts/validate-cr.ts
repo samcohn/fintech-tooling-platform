@@ -13,7 +13,7 @@ import { canCommit, approvalThresholdCents } from "../kernel/rbac";
 import { applyTransition } from "../apps/refunds/service";
 import { listRefunds } from "../apps/refunds/queries";
 import { transitions } from "../apps/refunds/machine";
-import { piiFields } from "../apps/refunds/pii";
+import { redactedFields } from "../apps/refunds/pii";
 import { REDACTED_VALUE } from "../kernel/mask/redact";
 import type { Actor } from "../kernel/auth";
 import { sql as appSql } from "../kernel/db/client";
@@ -211,7 +211,7 @@ async function gate3PiiContainment(fx: Fixture) {
   const { rows } = await listRefunds(fx.agent);
   let leaked = 0;
   for (const row of rows) {
-    for (const field of piiFields) {
+    for (const field of redactedFields) {
       const value = (row as Record<string, unknown>)[field];
       if (value != null && value !== REDACTED_VALUE) {
         leaked++;
@@ -222,7 +222,7 @@ async function gate3PiiContainment(fx: Fixture) {
   if (leaked === 0) {
     pass(
       "3",
-      `all ${piiFields.length} declared PII fields redacted across ${rows.length} rows`
+      `all ${redactedFields.length} full-value PII fields redacted across ${rows.length} rows`
     );
   }
 }
