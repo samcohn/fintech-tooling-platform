@@ -12,11 +12,14 @@ type Props = {
   unmaskSignal?: number;
 };
 
+const REVEAL_MS = 30_000;
+
 /**
  * Renders redacted by default. Unmasking is an explicit click or
  * keystroke (never hover) and calls the app's unmask route, which
  * writes an audit row naming the actor and field before the value is
- * revealed. A revealed field keeps a persistent marker.
+ * revealed. A revealed field carries a persistent marker and re-masks
+ * after 30 seconds or on window blur, whichever comes first.
  */
 export function Masked({
   entityType,
@@ -54,6 +57,18 @@ export function Masked({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unmaskSignal]);
+
+  // Re-mask after 30s or on window blur, whichever comes first.
+  useEffect(() => {
+    if (value === null) return;
+    const timer = setTimeout(() => setValue(null), REVEAL_MS);
+    const onBlur = () => setValue(null);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [value]);
 
   if (value !== null)
     return <span className="masked-revealed">{value}</span>;

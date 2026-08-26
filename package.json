@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.36.4",
+    "geist": "^1.7.2",
     "next": "^14.2.15",
     "next-auth": "^4.24.10",
     "postgres": "^3.4.5",

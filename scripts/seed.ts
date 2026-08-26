@@ -6,14 +6,36 @@ const url =
   process.env.DATABASE_URL ??
   "postgres://postgres:postgres@localhost:5432/internal_tools";
 
+// Weighted, not round-robin: duplicate charge and billing error
+// dominate in reality.
 const REASONS = [
   "duplicate_charge",
-  "customer_request",
-  "fraudulent",
-  "product_unsatisfactory",
-  "subscription_canceled",
+  "duplicate_charge",
+  "duplicate_charge",
   "billing_error",
+  "billing_error",
+  "billing_error",
+  "customer_request",
+  "customer_request",
+  "subscription_canceled",
+  "product_unsatisfactory",
+  "fraudulent",
 ];
+
+// Deterministic pseudo-random in [0, 1).
+function rand(i: number): number {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Long tail of small refunds, a handful above threshold, a few large.
+function realisticAmount(i: number): number {
+  const r = rand(i);
+  if (r < 0.55) return 500 + Math.floor(rand(i + 1) * 14_500); // $5–$150
+  if (r < 0.8) return 15_000 + Math.floor(rand(i + 2) * 34_900); // $150–$499
+  if (r < 0.97) return 50_000 + Math.floor(rand(i + 3) * 150_000); // $500–$2,000
+  return 200_000 + Math.floor(rand(i + 4) * 90_000); // $2,000–$2,900
+}
 
 const FIRST = ["ana", "ben", "carla", "dev", "elena", "frank", "grace", "hiro", "ida", "jon", "kim", "luis", "mona", "nate", "olga", "pri", "quinn", "rosa", "sam", "tara"];
 const LAST = ["moreno", "chu", "okafor", "silva", "novak", "haddad", "kim", "brennan", "sato", "ali"];
@@ -79,18 +101,22 @@ async function main() {
         requestedBy: half === 0 ? agent.id : agent2.id,
         status: "pending",
         idempotencyKey: `idem_${chargeId}_${half}`,
-        createdAt: new Date(now - (p * 2 + half) * 3_600_000),
+        // Scatter the shared-charge pairs through the queue instead of
+        // clustering them at the top.
+        createdAt: new Date(
+          now - Math.floor(rand(p * 2 + half + 900) * 13) * 86_400_000 -
+            (p * 5 + half * 3) * 3_600_000
+        ),
       });
     }
   }
 
-  // 188 more spread across statuses, roughly half above/below $500.
+  // 188 more spread across statuses with a realistic amount
+  // distribution and dates across ~14 days.
   for (let i = 0; i < 188; i++) {
     const chargeId = `ch_${2000 + i}`;
-    const below = i % 2 === 0;
-    const amount = below
-      ? 500 + ((i * 731) % 49_000) // $5.00 – $495.00
-      : 50_000 + ((i * 977) % 400_000); // $500.00 – $4,500.00
+    const amount = realisticAmount(i);
+    const below = amount < 50_000;
     const chargeAmount = amount + ((i * 137) % 20_000);
     const email = `${pick(FIRST, i)}.${pick(LAST, i * 3 + 1)}${i}@example.com`;
     const status = pick([...statuses], i);
@@ -115,13 +141,15 @@ async function main() {
       billingAddress: `${10 + i} ${pick(STREETS, i)}, ${pick(CITIES, i * 5 + 2)}`,
       amountCents: amount,
       currency: "USD",
-      reasonCode: pick(REASONS, i),
+      reasonCode: pick(REASONS, Math.floor(rand(i + 500) * REASONS.length)),
       requestedBy: i % 3 === 0 ? agent2.id : agent.id,
       recommendedBy: recommended ? (i % 3 === 0 ? agent.id : agent2.id) : null,
       committedBy: committed ? approver.id : null,
       status,
       idempotencyKey: `idem_${chargeId}`,
-      createdAt: new Date(now - ((i * 13) % 45) * 86_400_000 - (i % 24) * 3_600_000),
+      createdAt: new Date(
+        now - Math.floor(rand(i + 700) * 14) * 86_400_000 - (i % 24) * 3_600_000
+      ),
     });
   }
 

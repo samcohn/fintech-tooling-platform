@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Masked } from "@kernel/mask/Masked";
-import { ActionRail, FilterBar, Kbd, Money, StatusBadge } from "@kernel/ui";
+import { Kbd, Money, StatusBadge } from "@kernel/ui";
 import type { RefundDto } from "./queries";
 
 type Props = {
@@ -11,57 +11,75 @@ type Props = {
   queue: "all" | "approvals";
 };
 
-const STATUSES = [
+const FILTERS = [
+  "all",
   "pending",
   "recommended",
   "approved",
-  "rejected",
   "settled",
+  "rejected",
   "failed",
-];
+] as const;
 
-const humanize = (s: string) => s.replace(/_/g, " ");
+const sentence = (s: string) => {
+  const t = s.replace(/_/g, " ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
 
-const ROW_H = 32;
+const ROW_H = 34;
 const OVERSCAN = 12;
 
 export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
   const [rows, setRows] = useState(initialRows);
   const [cursor, setCursor] = useState(0);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [rowError, setRowError] = useState<{ id: string; msg: string } | null>(
+    null
+  );
   const [detailOpen, setDetailOpen] = useState(false);
   const [unmaskSignals, setUnmaskSignals] = useState<Record<string, number>>(
     {}
   );
-  const [scrollTop, setScrollTop] = useState(0);
-  const [viewH, setViewH] = useState(600);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [viewH, setViewH] = useState(800);
+  const tableRef = useRef<HTMLTableElement>(null);
 
-  const visible = statusFilter
-    ? rows.filter((r) => r.status === statusFilter)
-    : rows;
+  const visible =
+    statusFilter === "all"
+      ? rows
+      : rows.filter((r) => r.status === statusFilter);
   const selected = visible[cursor] ?? null;
+  const aboveThreshold = rows.filter(
+    (r) => r.amount_cents >= thresholdCents
+  ).length;
 
-  const start = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN);
+  // The document scrolls; virtualize against the window viewport.
+  const tableTop =
+    (tableRef.current?.getBoundingClientRect().top ?? 0) + scrollY;
+  const offset = Math.max(0, scrollY - tableTop);
+  const start = Math.max(0, Math.floor(offset / ROW_H) - OVERSCAN);
   const end = Math.min(
     visible.length,
-    Math.ceil((scrollTop + viewH) / ROW_H) + OVERSCAN
+    Math.ceil((offset + viewH) / ROW_H) + OVERSCAN
   );
   const window_ = visible.slice(start, end);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setViewH(el.clientHeight);
-    const onScroll = () => setScrollTop(el.scrollTop);
-    el.addEventListener("scroll", onScroll);
-    return () => el.removeEventListener("scroll", onScroll);
+    const onScroll = () => setScrollY(window.scrollY);
+    const onResize = () => setViewH(window.innerHeight);
+    onScroll();
+    onResize();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   // Keep the cursor row in view when navigating by keyboard.
   useEffect(() => {
-    const row = scrollRef.current?.querySelector('tr[data-selected="true"]');
+    const row = tableRef.current?.querySelector('tr[data-selected="true"]');
     row?.scrollIntoView({ block: "nearest" });
   }, [cursor]);
 
@@ -78,6 +96,7 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
     async (transition: string) => {
       if (!selected || !selected.actions.includes(transition as never)) return;
       const prev = rows;
+      const id = selected.id;
       const nextStatus: Record<string, string> = {
         recommend: "recommended",
         approve: "approved",
@@ -88,13 +107,13 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
       // Optimistic update with rollback on failure.
       setRows((rs) =>
         rs.map((r) =>
-          r.id === selected.id
+          r.id === id
             ? { ...r, status: nextStatus[transition] ?? r.status, actions: [] }
             : r
         )
       );
-      setError(null);
-      const res = await fetch(`/api/refunds/${selected.id}/transition`, {
+      setRowError(null);
+      const res = await fetch(`/api/refunds/${id}/transition`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transition }),
@@ -104,7 +123,10 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
         const data = (await res.json().catch(() => null)) as {
           error?: string;
         } | null;
-        setError(data?.error ?? `failed to ${transition}`);
+        setRowError({
+          id,
+          msg: data?.error ? sentence(data.error) : `Could not ${transition}`,
+        });
       } else {
         void refresh();
       }
@@ -139,69 +161,95 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible.length, selected, act]);
 
-  function primaryLabel(r: RefundDto): string | null {
+  function primaryAction(r: RefundDto): string | null {
     if (r.actions.includes("approve")) return "approve";
     if (r.actions.includes("recommend")) return "recommend";
     if (r.actions.includes("settle")) return "settle";
     return null;
   }
 
-  return (
-    <>
-      <FilterBar>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setCursor(0);
+  function actionCell(r: RefundDto, idx: number) {
+    if (rowError && rowError.id === r.id)
+      return <span className="k-rowerror">{rowError.msg}</span>;
+    const verb = primaryAction(r);
+    if (verb)
+      return (
+        <button
+          type="button"
+          className="k-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setCursor(idx);
+            void act(verb);
           }}
         >
-          <option value="">all statuses</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <span className="k-hint num">
-          approval threshold ${(thresholdCents / 100).toFixed(0)}
-        </span>
-        <span className="k-hint">{visible.length} requests</span>
-      </FilterBar>
-      {error && (
-        <p role="alert" className="k-alert">
-          {error}
-        </p>
-      )}
-      <ActionRail>
-        {selected?.actions.map((t) => (
+          {sentence(verb)}
+        </button>
+      );
+    if (r.unavailable_reason && !["closed"].includes(r.unavailable_reason))
+      return <span className="k-cell-muted">{sentence(r.unavailable_reason)}</span>;
+    return <span className="k-cell-faint">—</span>;
+  }
+
+  const counts: Record<string, number> = { all: rows.length };
+  for (const r of rows) counts[r.status] = (counts[r.status] ?? 0) + 1;
+
+  return (
+    <>
+      <div className="k-pagehead">
+        <div>
+          <h1 className="k-title">
+            {queue === "approvals" ? "Approvals" : "Refund requests"}
+          </h1>
+          <p className="k-threshold">
+            Approval threshold ${(thresholdCents / 100).toFixed(2)}
+          </p>
+        </div>
+        <div className="k-counts">
+          {visible.length} requests
+          <br />
+          {aboveThreshold} above threshold
+        </div>
+      </div>
+      <div className="k-filterbar" role="group" aria-label="Status filter">
+        {FILTERS.map((f) => (
           <button
-            key={t}
-            className={`k-btn${t === "reject" || t === "fail" ? " destructive" : ""}`}
-            onClick={() => act(t)}
+            key={f}
+            type="button"
+            className="k-seg"
+            data-active={statusFilter === f}
+            onClick={() => {
+              setStatusFilter(f);
+              setCursor(0);
+            }}
           >
-            {t}
+            {sentence(f)}
+            <span className="k-count">{counts[f] ?? 0}</span>
           </button>
         ))}
-        {selected && selected.actions.length === 0 && (
-          <span className="k-hint">
-            {selected.unavailable_reason ?? "no actions available"}
-          </span>
-        )}
-      </ActionRail>
-      <div className="k-scroll" ref={scrollRef}>
-        <table className="k-table">
+      </div>
+      {visible.length === 0 ? (
+        <p className="k-empty">
+          No {statusFilter === "all" ? "" : `${statusFilter} `}requests
+          {queue === "approvals" ? " awaiting approval" : ""}.
+        </p>
+      ) : (
+        <table className="k-table" ref={tableRef}>
           <thead>
             <tr>
-              <th>charge</th>
-              <th>customer email</th>
-              <th>card</th>
-              <th className="num">amount</th>
-              <th>reason</th>
-              <th>status</th>
-              <th>recommended by</th>
-              <th>created</th>
-              <th>action</th>
+              <th style={{ width: 132 }}>Charge</th>
+              <th style={{ width: 148 }}>Customer</th>
+              <th style={{ width: 92 }}>Card</th>
+              <th className="num" style={{ width: 96 }}>
+                Amount
+              </th>
+              <th style={{ width: 168 }}>Reason</th>
+              <th style={{ width: 116 }}>Status</th>
+              <th style={{ width: 132 }}>Recommended by</th>
+              <th className="num" style={{ width: 88 }}>
+                Created
+              </th>
+              <th className="num">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -212,14 +260,16 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
             )}
             {window_.map((r, i) => {
               const idx = start + i;
+              const own =
+                r.unavailable_reason === "own recommendation";
               return (
                 <tr
                   key={r.id}
                   data-selected={idx === cursor}
                   onClick={() => setCursor(idx)}
                 >
-                  <td className="mono k-cell-secondary">{r.charge_id}</td>
-                  <td>
+                  <td className="mono">{r.charge_id}</td>
+                  <td className="k-cell-customer">
                     <Masked
                       entityType="refund_request"
                       entityId={r.id}
@@ -227,61 +277,68 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
                       unmaskSignal={unmaskSignals[r.id] ?? 0}
                     />
                   </td>
-                  <td className="mono k-cell-secondary">
-                    •••• {r.card_last4}
-                  </td>
-                  <td className="num">
+                  <td className="mono k-cell-muted">•••• {r.card_last4}</td>
+                  <td className="k-amount">
                     <Money cents={r.amount_cents} currency={r.currency} />
                   </td>
-                  <td className="k-cell-secondary">{humanize(r.reason_code)}</td>
+                  <td>{sentence(r.reason_code)}</td>
                   <td>
                     <StatusBadge status={r.status} />
                   </td>
-                  <td className="k-cell-secondary">
-                    {r.recommended_by_name ?? "—"}
+                  <td
+                    className={own ? undefined : "k-cell-muted"}
+                    style={own ? { color: "var(--ink)" } : undefined}
+                  >
+                    {r.recommended_by_name ?? (
+                      <span className="k-cell-faint">—</span>
+                    )}
                   </td>
-                  <td className="num k-cell-secondary">
-                    {new Date(r.created_at).toLocaleDateString("en-US")}
+                  <td className="num k-cell-muted">
+                    {new Date(r.created_at).toLocaleDateString("en-US", {
+                      month: "numeric",
+                      day: "numeric",
+                      year: "2-digit",
+                    })}
                   </td>
-                  <td className="k-cell-muted">
-                    {primaryLabel(r) ?? r.unavailable_reason ?? "—"}
-                  </td>
+                  <td className="num">{actionCell(r, idx)}</td>
                 </tr>
               );
             })}
             {end < visible.length && (
               <tr className="k-spacer" aria-hidden>
-                <td colSpan={9} style={{ height: (visible.length - end) * ROW_H }} />
+                <td
+                  colSpan={9}
+                  style={{ height: (visible.length - end) * ROW_H }}
+                />
               </tr>
             )}
           </tbody>
         </table>
-      </div>
+      )}
       {detailOpen && selected && (
-        <aside className="k-panel" aria-label="refund detail">
+        <aside className="k-panel" aria-label="Refund detail">
           <button
             type="button"
             className="k-btn k-close"
             onClick={() => setDetailOpen(false)}
           >
-            close
+            Close
           </button>
-          <h2>Refund {selected.charge_id}</h2>
+          <p className="k-headline">
+            <Money
+              cents={selected.amount_cents}
+              currency={selected.currency}
+            />
+          </p>
+          <p className="k-headline-id">{selected.charge_id}</p>
           <dl>
-            <dt>amount</dt>
-            <dd className="num">
-              <Money
-                cents={selected.amount_cents}
-                currency={selected.currency}
-              />
-            </dd>
-            <dt>status</dt>
+            <dt>Status</dt>
             <dd>
               <StatusBadge status={selected.status} />
             </dd>
-            <dt>reason</dt>
-            <dd>{humanize(selected.reason_code)}</dd>
-            <dt>customer email</dt>
+            <dt>Reason</dt>
+            <dd>{sentence(selected.reason_code)}</dd>
+            <dt>Customer</dt>
             <dd>
               <Masked
                 entityType="refund_request"
@@ -290,9 +347,9 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
                 unmaskSignal={unmaskSignals[selected.id] ?? 0}
               />
             </dd>
-            <dt>card</dt>
+            <dt>Card</dt>
             <dd className="mono">•••• {selected.card_last4}</dd>
-            <dt>billing address</dt>
+            <dt>Billing address</dt>
             <dd>
               <Masked
                 entityType="refund_request"
@@ -300,10 +357,16 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
                 field="billing_address"
               />
             </dd>
-            <dt>recommended by</dt>
-            <dd>{selected.recommended_by_name ?? "—"}</dd>
-            <dt>created</dt>
-            <dd>{new Date(selected.created_at).toLocaleString("en-US")}</dd>
+            <dt>Recommended by</dt>
+            <dd>
+              {selected.recommended_by_name ?? (
+                <span className="k-cell-faint">—</span>
+              )}
+            </dd>
+            <dt>Created</dt>
+            <dd className="mono">
+              {new Date(selected.created_at).toLocaleString("en-US")}
+            </dd>
           </dl>
         </aside>
       )}

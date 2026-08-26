@@ -1,10 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import { Newsreader } from "next/font/google";
 import "@kernel/ui/tokens.css";
 import { getActor } from "@kernel/auth";
+import { SideNav } from "./nav";
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: "400",
+  style: "normal",
+  display: "swap",
+  variable: "--font-newsreader",
+});
 
 export const metadata: Metadata = {
-  title: "Internal Tools",
+  title: "Internal tools",
 };
 
 export default async function RootLayout({
@@ -14,28 +26,17 @@ export default async function RootLayout({
 }) {
   const actor = await getActor();
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} ${newsreader.variable}`}
+    >
       <body>
         <div className="k-shell">
           <aside className="k-side">
             <Link href="/" className="k-wordmark">
-              Internal Tools
+              Internal tools
             </Link>
-            <div className="k-side-section">
-              <p className="k-side-label">Operations</p>
-              <Link href="/refunds" className="k-side-link">
-                Refund queue
-              </Link>
-              <Link href="/refunds/approvals" className="k-side-link">
-                Approvals
-              </Link>
-            </div>
-            <div className="k-side-section">
-              <p className="k-side-label">Platform</p>
-              <Link href="/admin/change-request" className="k-side-link">
-                Request a change
-              </Link>
-            </div>
+            <SideNav />
             <span className="spacer" />
             <div className="k-who">
               {actor ? (

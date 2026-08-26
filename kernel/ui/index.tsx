@@ -1,17 +1,15 @@
 import type { ReactNode } from "react";
 
-export function ActionRail({ children }: { children: ReactNode }) {
-  return <div className="k-actionrail">{children}</div>;
-}
-
 export function FilterBar({ children }: { children: ReactNode }) {
   return <div className="k-filterbar">{children}</div>;
 }
 
+/** Sentence-case status mark. Only unresolved states get chrome. */
 export function StatusBadge({ status }: { status: string }) {
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
   return (
     <span className="badge" data-status={status}>
-      {status}
+      {label}
     </span>
   );
 }

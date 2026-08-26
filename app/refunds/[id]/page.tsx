@@ -21,23 +21,26 @@ export default async function RefundDetail({
   if (!row) notFound();
   return (
     <main className="k-page">
-      <h1>
+      <h1 className="k-title">
         Refund {row.chargeId} <StatusBadge status={row.status} />
       </h1>
       <table className="k-table" style={{ maxWidth: 560 }}>
         <tbody>
           <tr>
-            <td>amount</td>
+            <td>Amount</td>
             <td className="num">
               <Money cents={row.amountCents} currency={row.currency} />
             </td>
           </tr>
           <tr>
-            <td>reason</td>
-            <td>{row.reasonCode.replace(/_/g, " ")}</td>
+            <td>Reason</td>
+            <td>
+              {row.reasonCode.charAt(0).toUpperCase() +
+                row.reasonCode.slice(1).replace(/_/g, " ")}
+            </td>
           </tr>
           <tr>
-            <td>customer email</td>
+            <td>Customer email</td>
             <td>
               <Masked
                 entityType="refund_request"
@@ -47,11 +50,11 @@ export default async function RefundDetail({
             </td>
           </tr>
           <tr>
-            <td>card</td>
+            <td>Card</td>
             <td className="mono">•••• {row.cardLast4}</td>
           </tr>
           <tr>
-            <td>billing address</td>
+            <td>Billing address</td>
             <td>
               <Masked
                 entityType="refund_request"
@@ -61,11 +64,11 @@ export default async function RefundDetail({
             </td>
           </tr>
           <tr>
-            <td>idempotency key</td>
+            <td>Idempotency key</td>
             <td className="mono">{row.idempotencyKey}</td>
           </tr>
           <tr>
-            <td>created</td>
+            <td>Created</td>
             <td>{row.createdAt.toISOString()}</td>
           </tr>
         </tbody>

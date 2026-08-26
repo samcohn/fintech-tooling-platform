@@ -50,9 +50,9 @@ export function ChangeRequestForm() {
         required
         minLength={10}
       />
-      <div className="k-actionrail">
+      <div style={{ marginTop: 12 }}>
         <button className="k-btn" disabled={busy || request.length < 10}>
-          {busy ? "submitting…" : "submit change request"}
+          {busy ? "Submitting…" : "Submit change request"}
         </button>
       </div>
       {error && (
@@ -63,8 +63,8 @@ export function ChangeRequestForm() {
       {result && (
         <div>
           <p>
-            Change request <strong>{result.id}</strong> recorded in the audit
-            log.
+            Change request <span className="mono">{result.id}</span> recorded
+            in the audit log.
           </p>
           {result.devin.triggered ? (
             <p>
