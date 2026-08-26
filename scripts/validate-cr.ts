@@ -49,23 +49,24 @@ async function expectDbError(
 
 // ---------------------------------------------------------------- gate 1
 function gate1KernelBoundary() {
-  console.log("Gate 1 — kernel boundary");
+  const baseRef = process.env.VALIDATE_BASE_REF ?? "origin/main";
+  console.log(`Gate 1 — kernel boundary (vs ${baseRef})`);
   let diff = "";
   try {
-    // The gate protects an existing kernel. If origin/main has no
+    // The gate protects an existing kernel. If the base ref has no
     // kernel/ tree yet, this branch is the initial import.
-    const kernelOnMain = execSync("git ls-tree origin/main kernel", {
+    const kernelOnBase = execSync(`git ls-tree ${baseRef} kernel`, {
       encoding: "utf8",
     }).trim();
-    if (kernelOnMain === "") {
-      console.log("  - kernel/ does not exist on origin/main; skipping (initial import)");
+    if (kernelOnBase === "") {
+      console.log(`  - kernel/ does not exist on ${baseRef}; skipping (initial import)`);
       return;
     }
-    diff = execSync("git diff --name-only origin/main", {
+    diff = execSync(`git diff --name-only ${baseRef}`, {
       encoding: "utf8",
     });
   } catch {
-    console.log("  - origin/main not found; skipping (initial import)");
+    console.log(`  - ${baseRef} not found; skipping (initial import)`);
     return;
   }
   const touched = diff

@@ -16,21 +16,40 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <nav className="k-nav">
-          <strong>Internal Tools</strong>
-          <Link href="/refunds">Refunds</Link>
-          <Link href="/refunds/approvals">Approvals</Link>
-          <Link href="/admin/change-request">Change request</Link>
-          <span className="spacer" />
-          {actor ? (
-            <span className="who">
-              {actor.email} · {actor.role}
-            </span>
-          ) : (
-            <Link href="/api/auth/signin">Sign in</Link>
-          )}
-        </nav>
-        {children}
+        <div className="k-shell">
+          <aside className="k-side">
+            <Link href="/" className="k-wordmark">
+              Internal Tools
+            </Link>
+            <div className="k-side-section">
+              <p className="k-side-label">Operations</p>
+              <Link href="/refunds" className="k-side-link">
+                Refund queue
+              </Link>
+              <Link href="/refunds/approvals" className="k-side-link">
+                Approvals
+              </Link>
+            </div>
+            <div className="k-side-section">
+              <p className="k-side-label">Platform</p>
+              <Link href="/admin/change-request" className="k-side-link">
+                Request a change
+              </Link>
+            </div>
+            <span className="spacer" />
+            <div className="k-who">
+              {actor ? (
+                <>
+                  <strong>{actor.name}</strong>
+                  {actor.email} · {actor.role}
+                </>
+              ) : (
+                <Link href="/api/auth/signin">Sign in</Link>
+              )}
+            </div>
+          </aside>
+          <div>{children}</div>
+        </div>
       </body>
     </html>
   );

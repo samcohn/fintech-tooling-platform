@@ -35,17 +35,17 @@ export function ChangeRequestForm() {
   }
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 640 }}>
-      <p className="who">
+    <form onSubmit={submit} className="k-card" style={{ maxWidth: 640 }}>
+      <p className="k-sub">
         Describe the change in plain English. Devin works inside the
         guardrails: it cannot touch the kernel, every transition stays
         audited, and a PR only opens if the validation gates pass.
       </p>
       <textarea
+        className="k-input"
         value={request}
         onChange={(e) => setRequest(e.target.value)}
         rows={5}
-        style={{ width: "100%", font: "inherit", padding: 8 }}
         placeholder='e.g. "add a chargeback reason code and show it in the queue"'
         required
         minLength={10}
@@ -56,7 +56,7 @@ export function ChangeRequestForm() {
         </button>
       </div>
       {error && (
-        <p role="alert" style={{ color: "var(--signal)" }}>
+        <p role="alert" className="k-alert">
           {error}
         </p>
       )}
@@ -72,7 +72,7 @@ export function ChangeRequestForm() {
               <a href={result.devin.url}>{result.devin.sessionId}</a>
             </p>
           ) : (
-            <p className="who">Devin not triggered: {result.devin.reason}</p>
+            <p className="k-hint">Devin not triggered: {result.devin.reason}</p>
           )}
         </div>
       )}

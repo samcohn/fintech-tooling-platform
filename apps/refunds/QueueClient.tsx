@@ -115,14 +115,14 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
             </option>
           ))}
         </select>
-        <span className="who">
+        <span className="k-hint">
           threshold ${(thresholdCents / 100).toFixed(0)} · <Kbd>j</Kbd>/
           <Kbd>k</Kbd> navigate · <Kbd>a</Kbd> recommend/approve ·{" "}
           <Kbd>r</Kbd> reject
         </span>
       </FilterBar>
       {error && (
-        <p role="alert" style={{ color: "var(--signal)" }}>
+        <p role="alert" className="k-alert">
           {error}
         </p>
       )}
@@ -137,7 +137,9 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
           </button>
         ))}
         {selected && selected.actions.length === 0 && (
-          <span className="who">no actions available for you on this row</span>
+          <span className="k-hint">
+            no actions available for you on this row
+          </span>
         )}
       </ActionRail>
       <table className="k-table">

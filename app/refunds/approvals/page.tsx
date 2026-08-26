@@ -14,7 +14,7 @@ export default async function ApprovalsPage() {
   return (
     <main className="k-page">
       <h1>Approver queue</h1>
-      <p className="who">
+      <p className="k-sub">
         Pending recommendations. Self-approval is blocked at the route level
         as well as here.
       </p>

@@ -12,7 +12,9 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "test": "vitest run",
-    "validate:cr": "tsx scripts/validate-cr.ts"
+    "validate:cr": "tsx scripts/validate-cr.ts",
+    "demo:gate-pass": "tsx scripts/validate-cr.ts",
+    "demo:gate-fail": "bash scripts/demo-gate-fail.sh"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.4",
