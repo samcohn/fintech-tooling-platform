@@ -34,7 +34,7 @@ export default async function RefundDetail({
           </tr>
           <tr>
             <td>reason</td>
-            <td>{row.reasonCode}</td>
+            <td>{row.reasonCode.replace(/_/g, " ")}</td>
           </tr>
           <tr>
             <td>customer email</td>

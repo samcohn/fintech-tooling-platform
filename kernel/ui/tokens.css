@@ -19,9 +19,6 @@
   --wash: rgba(22, 21, 15, 0.04);
   --wash-2: rgba(22, 21, 15, 0.08);
   --hairline: rgba(22, 21, 15, 0.18);
-  --canvas: #0f0e0d;
-  --canvas-2: #1a1917;
-  --line-dark: #2b2a27;
   --signal: #b3372e; /* destructive only */
 
   --font: "Inter Tight", "Inter", system-ui, sans-serif;
@@ -67,8 +64,9 @@ body {
 }
 
 aside.k-side {
-  background: var(--canvas);
-  color: #cfcdc6;
+  background: var(--paper);
+  color: var(--ink-2);
+  border-right: 0.5px solid var(--hairline);
   padding: var(--s-6) var(--s-4);
   display: flex;
   flex-direction: column;
@@ -81,7 +79,7 @@ aside.k-side {
 .k-wordmark {
   font-weight: 500;
   font-size: 15px;
-  color: #f5f3ec;
+  color: var(--ink);
   text-decoration: none;
 }
 
@@ -93,12 +91,12 @@ aside.k-side {
 
 .k-side-label {
   font-size: 11px;
-  color: #7d7b73;
+  color: var(--muted);
   margin: 0 var(--s-2) var(--s-1);
 }
 
 .k-side a.k-side-link {
-  color: #cfcdc6;
+  color: var(--ink-2);
   text-decoration: none;
   padding: 5px var(--s-2);
   border-radius: 3px;
@@ -106,8 +104,8 @@ aside.k-side {
 }
 
 .k-side a.k-side-link:hover {
-  background: var(--canvas-2);
-  color: #f5f3ec;
+  background: var(--wash);
+  color: var(--ink);
 }
 
 .k-side .spacer {
@@ -115,21 +113,21 @@ aside.k-side {
 }
 
 .k-who {
-  border-top: 0.5px solid var(--line-dark);
+  border-top: 0.5px solid var(--hairline);
   padding-top: var(--s-4);
   font-size: 12px;
-  color: #7d7b73;
+  color: var(--muted);
   line-height: 1.5;
 }
 
 .k-who strong {
-  color: #f5f3ec;
+  color: var(--ink);
   font-weight: 500;
   display: block;
 }
 
 .k-who a {
-  color: #cfcdc6;
+  color: var(--ink-2);
 }
 
 main.k-page {
@@ -243,27 +241,27 @@ button.k-btn {
   font-weight: 500;
   height: 28px;
   padding: 0 var(--s-4);
-  border: 0.5px solid var(--ink);
+  border: 0.5px solid var(--hairline);
   border-radius: 3px;
-  background: var(--ink);
-  color: var(--paper);
+  background: none;
+  color: var(--ink);
   cursor: pointer;
   transition: background 100ms linear;
 }
 
 button.k-btn:hover {
-  background: var(--canvas-2);
+  background: var(--wash);
+  border-color: var(--ink);
 }
 
 button.k-btn.destructive {
-  background: transparent;
-  border-color: var(--signal);
+  border-color: var(--hairline);
   color: var(--signal);
 }
 
 button.k-btn.destructive:hover {
-  background: var(--signal);
-  color: var(--paper);
+  border-color: var(--signal);
+  background: rgba(179, 55, 46, 0.06);
 }
 
 .k-filterbar {

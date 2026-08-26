@@ -20,6 +20,8 @@ const STATUSES = [
   "failed",
 ];
 
+const humanize = (s: string) => s.replace(/_/g, " ");
+
 const ROW_H = 32;
 const OVERSCAN = 12;
 
@@ -231,7 +233,7 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
                   <td className="num">
                     <Money cents={r.amount_cents} currency={r.currency} />
                   </td>
-                  <td className="k-cell-secondary">{r.reason_code}</td>
+                  <td className="k-cell-secondary">{humanize(r.reason_code)}</td>
                   <td>
                     <StatusBadge status={r.status} />
                   </td>
@@ -278,7 +280,7 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
               <StatusBadge status={selected.status} />
             </dd>
             <dt>reason</dt>
-            <dd>{selected.reason_code}</dd>
+            <dd>{humanize(selected.reason_code)}</dd>
             <dt>customer email</dt>
             <dd>
               <Masked
