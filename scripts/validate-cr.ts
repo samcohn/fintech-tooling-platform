@@ -16,6 +16,7 @@ import { transitions } from "../apps/refunds/machine";
 import { piiFields } from "../apps/refunds/pii";
 import { REDACTED_VALUE } from "../kernel/mask/redact";
 import type { Actor } from "../kernel/auth";
+import { sql as appSql } from "../kernel/db/client";
 
 const url =
   process.env.DATABASE_URL ??
@@ -51,6 +52,15 @@ function gate1KernelBoundary() {
   console.log("Gate 1 — kernel boundary");
   let diff = "";
   try {
+    // The gate protects an existing kernel. If origin/main has no
+    // kernel/ tree yet, this branch is the initial import.
+    const kernelOnMain = execSync("git ls-tree origin/main kernel", {
+      encoding: "utf8",
+    }).trim();
+    if (kernelOnMain === "") {
+      console.log("  - kernel/ does not exist on origin/main; skipping (initial import)");
+      return;
+    }
     diff = execSync("git diff --name-only origin/main", {
       encoding: "utf8",
     });
@@ -327,6 +337,7 @@ async function main() {
   } finally {
     await fx.cleanup();
     await sql.end();
+    await appSql.end();
   }
   if (failures > 0) {
     console.error(`\n${failures} gate assertion(s) FAILED`);
