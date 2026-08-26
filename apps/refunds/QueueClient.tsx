@@ -59,12 +59,8 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
 
   // Keep the cursor row in view when navigating by keyboard.
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const rowTop = cursor * ROW_H;
-    if (rowTop < el.scrollTop) el.scrollTop = rowTop;
-    else if (rowTop + ROW_H > el.scrollTop + el.clientHeight)
-      el.scrollTop = rowTop + ROW_H - el.clientHeight;
+    const row = scrollRef.current?.querySelector('tr[data-selected="true"]');
+    row?.scrollIntoView({ block: "nearest" });
   }, [cursor]);
 
   const refresh = useCallback(async () => {

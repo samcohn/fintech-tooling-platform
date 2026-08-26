@@ -180,6 +180,7 @@ table.k-table th {
 table.k-table td {
   padding: var(--s-2) var(--s-3);
   height: var(--row-h);
+  line-height: var(--s-4);
   border-bottom: 0.5px solid var(--wash-2);
   white-space: nowrap;
 }
@@ -192,6 +193,8 @@ table.k-table td.num {
 table.k-table tbody tr {
   cursor: default;
   transition: background 100ms linear;
+  /* Clear the sticky header when scrolled into view. */
+  scroll-margin-top: 30px;
 }
 
 table.k-table tbody tr:hover {
