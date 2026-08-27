@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
 import { GeistSans } from "geist/font/sans";
 import { Newsreader } from "next/font/google";
 import "@platform/ui/tokens.css";
@@ -32,9 +33,6 @@ export default async function RootLayout({
       <body>
         <div className="k-shell">
           <aside className="k-side">
-            <Link href="/" className="k-wordmark">
-              Internal tools
-            </Link>
             <SideNav />
             <span className="spacer" />
             <Link href="/admin/change-request" className="k-cr-btn">

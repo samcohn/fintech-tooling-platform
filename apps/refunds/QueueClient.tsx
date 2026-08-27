@@ -477,9 +477,9 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
       <div ref={listRef}>
         <div className="k-grid k-thead">
           <div>Refund</div>
-          <div>Customer</div>
           <div className="num">Amount</div>
           <div>Status</div>
+          <div>Customer</div>
           <div>Recommended by</div>
           <div className="num">Action</div>
         </div>
@@ -514,6 +514,12 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
                       {dotDate(r.created_at)}
                     </div>
                   </div>
+                  <div className="k-amount">
+                    <Money cents={r.amount_cents} currency={r.currency} />
+                  </div>
+                  <div>
+                    <StatusBadge status={r.status} />
+                  </div>
                   <div className="k-cell-customer">
                     <Masked
                       entityType="refund_request"
@@ -521,12 +527,6 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
                       field="customer_email"
                       unmaskSignal={unmaskSignals[r.id] ?? 0}
                     />
-                  </div>
-                  <div className="k-amount">
-                    <Money cents={r.amount_cents} currency={r.currency} />
-                  </div>
-                  <div>
-                    <StatusBadge status={r.status} />
                   </div>
                   <div className="k-cell-by" data-own={own}>
                     {inFlight === r.id ? (
