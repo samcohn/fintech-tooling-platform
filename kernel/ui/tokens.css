@@ -260,6 +260,7 @@ table.k-table td {
    pull their extra height into the cell padding. */
 table.k-table td .k-btn {
   margin: -4px 0;
+  vertical-align: middle;
 }
 
 table.k-table td .badge {
