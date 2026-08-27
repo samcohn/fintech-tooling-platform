@@ -477,11 +477,11 @@ export function QueueClient({ initialRows, thresholdCents, queue }: Props) {
       <div ref={listRef}>
         <div className="k-grid k-thead">
           <div>Refund</div>
-          <div className="num">Amount</div>
+          <div>Amount</div>
           <div>Status</div>
           <div>Customer</div>
           <div>Recommended by</div>
-          <div className="num">Action</div>
+          <div>Action</div>
         </div>
         {visible.length === 0 ? (
           <p className="k-empty">{emptyLabel}</p>

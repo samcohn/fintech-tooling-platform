@@ -90,7 +90,7 @@ body {
 }
 
 .num {
-  text-align: right;
+  text-align: left;
 }
 
 /* Identifiers: sans at 11px with tracking, never a monospace. */
@@ -544,7 +544,6 @@ button.k-bulk-destructive {
 .k-amount {
   font-size: 14px;
   color: var(--ink);
-  text-align: right;
 }
 
 .k-cell-by {
@@ -579,7 +578,6 @@ button.k-bulk-destructive {
 /* The action cell: resting state crossfades to the button. */
 .k-actioncell {
   position: relative;
-  text-align: right;
 }
 
 .k-action-rest {
@@ -594,7 +592,7 @@ button.k-bulk-destructive {
 
 .k-action-live {
   position: absolute;
-  right: 0;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   opacity: 0;
@@ -1030,12 +1028,12 @@ table.k-table td:first-child {
 
 table.k-table th.num,
 table.k-table td.num {
-  text-align: right;
+  text-align: left;
 }
 
 table.k-table td.k-amount {
   color: var(--ink);
-  text-align: right;
+  text-align: left;
 }
 
 table.k-table tbody tr {
