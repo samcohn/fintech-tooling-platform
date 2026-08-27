@@ -15,6 +15,7 @@ import {
   type DevinSessionResult,
 } from "../devin/client";
 import { loadPlaybook, interpolate } from "../devin/playbook";
+import { notifyTriaged, notifyStatusChanged } from "./slack";
 
 function specExists(id: string): boolean {
   return existsSync(join(process.cwd(), ".devin", "specs", `${id}.md`));
@@ -132,6 +133,7 @@ export async function submitChangeRequest(
     return row;
   });
 
+  await notifyTriaged(updated, actor.name);
   return updated;
 }
 
@@ -180,4 +182,14 @@ export async function updateRequestStatus(
     });
     return after;
   });
+}
+
+export async function updateRequestStatusAndNotify(
+  actor: Actor,
+  id: string,
+  patch: StatusPatch
+): Promise<ChangeRequest | null> {
+  const row = await updateRequestStatus(actor, id, patch);
+  if (row) await notifyStatusChanged(row, actor.name);
+  return row;
 }
