@@ -14,7 +14,8 @@
     "test": "vitest run",
     "validate:cr": "tsx scripts/validate-cr.ts",
     "demo:gate-pass": "tsx scripts/validate-cr.ts",
-    "demo:gate-fail": "bash scripts/demo-gate-fail.sh"
+    "demo:gate-fail": "bash scripts/demo-gate-fail.sh",
+    "demo:stage-requests": "tsx scripts/stage-demo-requests.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.4",

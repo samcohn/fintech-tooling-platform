@@ -3,3 +3,6 @@ node_modules/
 .env
 *.tsbuildinfo
 next-env.d.ts
+# Devin runtime artifacts; human-authored specs stay tracked.
+.devin/*
+!.devin/specs/
