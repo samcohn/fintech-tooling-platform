@@ -1,36 +1,36 @@
 :root {
-  /* ---- Ground ---------------------------------------------------- */
-  --paper:            #FBFAF8;  /* page background, warm off-white   */
+  /* ---- Ground (plain, Notion-inspired neutrals) ------------------ */
+  --paper:            #FFFFFF;  /* page background, plain white      */
   --paper-raised:     #FFFFFF;  /* detail panel only                 */
-  --paper-sunken:     #F5F3EF;  /* footer legend strip only          */
+  --paper-sunken:     #F7F7F5;  /* footer legend strip only          */
 
   /* ---- Ink (four steps, no more) --------------------------------- */
-  --ink:              #1A1917;  /* amounts, primary values           */
-  --ink-secondary:    #55524C;  /* reasons, supporting values        */
-  --ink-muted:        #8A867E;  /* column headers, meta, placeholders*/
-  --ink-faint:        #B5B1A9;  /* em-dash placeholders, disabled    */
+  --ink:              #37352F;  /* amounts, primary values           */
+  --ink-secondary:    #5F5E5B;  /* reasons, supporting values        */
+  --ink-muted:        #9B9A97;  /* column headers, meta, placeholders*/
+  --ink-faint:        #C7C6C3;  /* em-dash placeholders, disabled    */
 
   /* ---- Rules ----------------------------------------------------- */
-  --rule:             #E7E4DE;  /* row separators                    */
-  --rule-strong:      #D3CFC7;  /* header underline, control borders */
+  --rule:             #EDEDEC;  /* row separators                    */
+  --rule-strong:      #DFDFDE;  /* header underline, control borders */
 
   /* ---- Fills ----------------------------------------------------- */
-  --wash:             #F2F0EC;  /* row hover                         */
-  --wash-strong:      #E9E6E0;  /* row selected                      */
+  --wash:             #F1F1EF;  /* row hover                         */
+  --wash-strong:      #E8E8E6;  /* row selected                      */
 
   /* ---- Semantic. Only ever used for status. ---------------------- */
-  --sig-review:       #35485E;  /* ink blue  — needs a human         */
-  --sig-review-tint:  #EDF1F5;
-  --sig-cleared:      #3F5240;  /* moss      — authorized / done     */
-  --sig-cleared-tint: #EDF1EC;
-  --sig-refused:      #6E2F2A;  /* oxblood   — refused / failed      */
-  --sig-refused-tint: #F5EDEB;
+  --sig-review:       #337EA9;  /* blue      — needs a human         */
+  --sig-review-tint:  #E7F3F8;
+  --sig-cleared:      #448361;  /* green     — authorized / done     */
+  --sig-cleared-tint: #EDF3EC;
+  --sig-refused:      #C4554D;  /* red       — refused / failed      */
+  --sig-refused-tint: #FAECEC;
 
   /* ---- Destructive action (distinct from refused status) --------- */
-  --danger:           #8A3A32;
+  --danger:           #C4554D;
 
   /* ---- Focus ----------------------------------------------------- */
-  --focus:            #35485E;
+  --focus:            #337EA9;
 
   /* ---- Type ------------------------------------------------------ */
   --font-sans: var(--font-geist-sans), "ABC Diatype", -apple-system, system-ui, sans-serif;
@@ -83,7 +83,7 @@ body {
 }
 
 aside.k-side {
-  background: var(--paper);
+  background: var(--paper-sunken);
   border-right: var(--hairline) solid var(--rule);
   padding: var(--page-pad-y) 12px 16px;
   display: flex;
