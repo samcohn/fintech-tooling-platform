@@ -256,6 +256,16 @@ table.k-table td {
   color: var(--ink-secondary);
 }
 
+/* Chromed content (buttons, marks) must not stretch rows past 34px:
+   pull their extra height into the cell padding. */
+table.k-table td .k-btn {
+  margin: -4px 0;
+}
+
+table.k-table td .badge {
+  margin: -2px 0;
+}
+
 table.k-table th.num,
 table.k-table td.num {
   text-align: right;
