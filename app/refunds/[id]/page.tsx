@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { getActor } from "@kernel/auth";
-import { db } from "@kernel/db/client";
-import { refundRequests } from "@kernel/db/schema";
-import { Masked } from "@kernel/mask/Masked";
-import { Money, StatusBadge } from "@kernel/ui";
+import { getActor } from "@platform/auth";
+import { db } from "@platform/db/client";
+import { refundRequests } from "@platform/db/schema";
+import { Masked } from "@platform/mask/Masked";
+import { Money, StatusBadge } from "@platform/ui";
 
 export const dynamic = "force-dynamic";
 

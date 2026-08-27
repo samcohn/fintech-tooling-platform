@@ -3,8 +3,8 @@ import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Newsreader } from "next/font/google";
-import "@kernel/ui/tokens.css";
-import { getActor } from "@kernel/auth";
+import "@platform/ui/tokens.css";
+import { getActor } from "@platform/auth";
 import { SideNav } from "./nav";
 
 const newsreader = Newsreader({

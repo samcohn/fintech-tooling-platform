@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { getActor } from "@kernel/auth";
-import { writeAudit } from "@kernel/audit";
-import { db } from "@kernel/db/client";
+import { getActor } from "@platform/auth";
+import { writeAudit } from "@platform/audit";
+import { db } from "@platform/db/client";
 import { loadPlaybook, interpolate } from "@platform/devin/playbook";
 import { triggerDevinSession } from "@platform/devin/client";
 

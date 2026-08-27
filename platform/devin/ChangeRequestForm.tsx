@@ -38,7 +38,7 @@ export function ChangeRequestForm() {
     <form onSubmit={submit} className="k-card" style={{ maxWidth: 640 }}>
       <p className="k-sub">
         Describe the change in plain English. Devin works inside the
-        guardrails: it cannot touch the kernel, every transition stays
+        guardrails: it cannot touch the platform, every transition stays
         audited, and a PR only opens if the validation gates pass.
       </p>
       <textarea

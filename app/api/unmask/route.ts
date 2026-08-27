@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getActor } from "@kernel/auth";
-import { handleUnmask } from "@kernel/mask/unmask";
-import { db } from "@kernel/db/client";
-import { refundRequests } from "@kernel/db/schema";
+import { getActor } from "@platform/auth";
+import { handleUnmask } from "@platform/mask/unmask";
+import { db } from "@platform/db/client";
+import { refundRequests } from "@platform/db/schema";
 import { piiFields } from "@apps/refunds/pii";
 
 const bodySchema = z.object({

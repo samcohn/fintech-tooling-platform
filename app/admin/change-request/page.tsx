@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getActor } from "@kernel/auth";
+import { getActor } from "@platform/auth";
 import { ChangeRequestForm } from "@platform/devin/ChangeRequestForm";
 
 export const dynamic = "force-dynamic";

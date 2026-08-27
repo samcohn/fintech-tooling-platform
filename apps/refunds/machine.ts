@@ -1,5 +1,5 @@
-import type { RefundStatus } from "@kernel/db/schema";
-import type { Transition } from "@kernel/rbac";
+import type { RefundStatus } from "@platform/db/schema";
+import type { Transition } from "@platform/rbac";
 
 export const transitions: Record<
   Transition,

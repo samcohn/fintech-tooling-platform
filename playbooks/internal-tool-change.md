@@ -14,12 +14,12 @@ regulated fintech. Work on branch `devin/cr-{{id}}`.
 
 ## Hard constraints
 
-- You may not modify anything under `/kernel`. Auth, RBAC, audit, and
+- You may not modify anything under `/platform`. Auth, RBAC, audit, and
   masking are fixed. If this request cannot be satisfied without
-  changing kernel code, **stop and open no PR** — write your reasoning
-  to `.devin/blocked.md` explaining which kernel invariant the request
+  changing platform code, **stop and open no PR** — write your reasoning
+  to `.devin/blocked.md` explaining which platform invariant the request
   conflicts with, and exit.
-- Every new state transition must route through `kernel/audit`.
+- Every new state transition must route through `platform/audit`.
 - Every new field containing personal or payment data must be declared
   in `apps/{{app}}/pii.ts` and rendered via `<Masked>`.
 - Authorization thresholds are server config. Never read a threshold,

@@ -17,7 +17,7 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
-      "@kernel/*": ["./kernel/*"],
+      "@platform/*": ["./platform/*"],
       "@apps/*": ["./apps/*"],
       "@platform/*": ["./platform/*"]
     }

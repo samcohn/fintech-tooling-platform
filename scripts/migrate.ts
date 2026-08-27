@@ -8,7 +8,7 @@ const url =
 
 async function main() {
   const sql = postgres(url, { max: 1 });
-  const dir = join(process.cwd(), "kernel", "db", "migrations");
+  const dir = join(process.cwd(), "platform", "db", "migrations");
   const files = readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
   for (const file of files) {
     process.stdout.write(`applying ${file}... `);

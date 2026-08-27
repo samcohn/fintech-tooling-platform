@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getActor } from "@kernel/auth";
+import { getActor } from "@platform/auth";
 import { listRefunds } from "@apps/refunds/queries";
 import { QueueClient } from "@apps/refunds/QueueClient";
 

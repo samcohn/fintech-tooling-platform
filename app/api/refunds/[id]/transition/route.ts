@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { getActor } from "@kernel/auth";
-import { redactRecord } from "@kernel/mask/redact";
+import { getActor } from "@platform/auth";
+import { redactRecord } from "@platform/mask/redact";
 import { applyTransition } from "@apps/refunds/service";
 import { piiFields } from "@apps/refunds/pii";
 

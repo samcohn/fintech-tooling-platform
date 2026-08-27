@@ -1,13 +1,13 @@
 # Internal tools platform
 
-One app on a reusable kernel, plus the loop by which non-engineers
+One app on a reusable platform, plus the loop by which non-engineers
 change it: change request → playbook → Devin → validation gates → PR →
 engineer review → merge.
 
 ## Layout
 
 ```
-/kernel                 built once, never modified by app work
+/platform                 built once, never modified by app work
   auth/                 Auth.js, session, server-side role resolution
   rbac/                 role policy, approval-threshold primitive
   audit/                append-only log + Postgres trigger
@@ -45,10 +45,10 @@ emails, no password; production swaps in an OIDC provider).
 
 ## Gates
 
-`pnpm validate:cr` — kernel boundary, audit coverage, PII containment,
+`pnpm validate:cr` — platform boundary, audit coverage, PII containment,
 audit immutability, authorization invariants, money invariants. A Devin
 change-request session must exit 0 here before opening a PR; if the
-request requires touching `/kernel`, it stops, writes
+request requires touching `/platform`, it stops, writes
 `.devin/blocked.md`, and opens no PR.
 
 ## Tests

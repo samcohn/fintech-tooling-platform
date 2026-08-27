@@ -1,9 +1,9 @@
 import { desc, eq, aliasedTable } from "drizzle-orm";
-import { db } from "@kernel/db/client";
-import { refundRequests, users } from "@kernel/db/schema";
-import { redactAll } from "@kernel/mask/redact";
-import { canCommit, approvalThresholdCents, type Transition } from "@kernel/rbac";
-import type { Actor } from "@kernel/auth";
+import { db } from "@platform/db/client";
+import { refundRequests, users } from "@platform/db/schema";
+import { redactAll } from "@platform/mask/redact";
+import { canCommit, approvalThresholdCents, type Transition } from "@platform/rbac";
+import type { Actor } from "@platform/auth";
 import { canTransition } from "./machine";
 import { redactedFields } from "./pii";
 

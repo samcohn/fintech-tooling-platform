@@ -8,15 +8,15 @@ import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, and } from "drizzle-orm";
-import * as schema from "../kernel/db/schema";
-import { canCommit, approvalThresholdCents } from "../kernel/rbac";
+import * as schema from "../platform/db/schema";
+import { canCommit, approvalThresholdCents } from "../platform/rbac";
 import { applyTransition } from "../apps/refunds/service";
 import { listRefunds } from "../apps/refunds/queries";
 import { transitions } from "../apps/refunds/machine";
 import { redactedFields } from "../apps/refunds/pii";
-import { REDACTED_VALUE } from "../kernel/mask/redact";
-import type { Actor } from "../kernel/auth";
-import { sql as appSql } from "../kernel/db/client";
+import { REDACTED_VALUE } from "../platform/mask/redact";
+import type { Actor } from "../platform/auth";
+import { sql as appSql } from "../platform/db/client";
 
 const url =
   process.env.DATABASE_URL ??
@@ -50,16 +50,16 @@ async function expectDbError(
 // ---------------------------------------------------------------- gate 1
 function gate1KernelBoundary() {
   const baseRef = process.env.VALIDATE_BASE_REF ?? "origin/main";
-  console.log(`Gate 1 — kernel boundary (vs ${baseRef})`);
+  console.log(`Gate 1 — platform boundary (vs ${baseRef})`);
   let diff = "";
   try {
-    // The gate protects an existing kernel. If the base ref has no
-    // kernel/ tree yet, this branch is the initial import.
-    const kernelOnBase = execSync(`git ls-tree ${baseRef} kernel`, {
+    // The gate protects an existing platform. If the base ref has no
+    // platform/ tree yet, this branch is the initial import.
+    const platformOnBase = execSync(`git ls-tree ${baseRef} platform`, {
       encoding: "utf8",
     }).trim();
-    if (kernelOnBase === "") {
-      console.log(`  - kernel/ does not exist on ${baseRef}; skipping (initial import)`);
+    if (platformOnBase === "") {
+      console.log(`  - platform/ does not exist on ${baseRef}; skipping (initial import)`);
       return;
     }
     diff = execSync(`git diff --name-only ${baseRef}`, {
@@ -71,11 +71,11 @@ function gate1KernelBoundary() {
   }
   const touched = diff
     .split("\n")
-    .filter((f) => f.startsWith("kernel/"));
+    .filter((f) => f.startsWith("platform/"));
   if (touched.length > 0) {
-    fail("1", `kernel paths modified: ${touched.join(", ")}`);
+    fail("1", `platform paths modified: ${touched.join(", ")}`);
   } else {
-    pass("1", "no kernel paths modified");
+    pass("1", "no platform paths modified");
   }
 }
 

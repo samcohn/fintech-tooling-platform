@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { db } from "@kernel/db/client";
-import { refundRequests, type RefundRequest } from "@kernel/db/schema";
-import { writeAudit } from "@kernel/audit";
-import { canCommit, type Transition } from "@kernel/rbac";
-import type { Actor } from "@kernel/auth";
+import { db } from "@platform/db/client";
+import { refundRequests, type RefundRequest } from "@platform/db/schema";
+import { writeAudit } from "@platform/audit";
+import { canCommit, type Transition } from "@platform/rbac";
+import type { Actor } from "@platform/auth";
 import { canTransition, transitions } from "./machine";
 
 export type TransitionResult =
@@ -12,7 +12,7 @@ export type TransitionResult =
 
 /**
  * Apply a state transition. Authorization is resolved entirely
- * server-side via kernel/rbac; every successful transition writes
+ * server-side via platform/rbac; every successful transition writes
  * exactly one audit row in the same database transaction.
  */
 export async function applyTransition(

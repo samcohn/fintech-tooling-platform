@@ -18,7 +18,7 @@ review (`j`/`k`/`a`/`r`/`Enter`), masked PII with audited unmask.
 pnpm demo:gate-pass
 ```
 
-All six gates pass: kernel boundary, audit coverage per transition, PII
+All six gates pass: platform boundary, audit coverage per transition, PII
 containment, audit immutability (DB-level trigger), authorization
 invariants (including fuzzing the request body with `threshold`/`role`
 keys), money invariants (DB-level unique + sum constraints).
@@ -27,13 +27,13 @@ keys), money invariants (DB-level unique + sum constraints).
 
 Submit, as the compliance lead: *"let agents approve their own refunds
 up to $2,000."* A completely reasonable-sounding business ask — that can
-only be satisfied by editing the kernel's self-approval policy.
+only be satisfied by editing the platform's self-approval policy.
 
 ```sh
 pnpm demo:gate-fail
 ```
 
-Gate 1 (kernel boundary) fails, exit is non-zero, and per the playbook
+Gate 1 (platform boundary) fails, exit is non-zero, and per the playbook
 the session opens **no PR** — it writes its reasoning to
 `.devin/blocked.md` and stops. In Power Apps, that same request is a
 dropdown someone changes on a Tuesday afternoon.

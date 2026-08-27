@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Masked } from "@kernel/mask/Masked";
-import { Kbd, Money, StatusBadge } from "@kernel/ui";
+import { Masked } from "@platform/mask/Masked";
+import { Kbd, Money, StatusBadge } from "@platform/ui";
 import type { RefundDto } from "./queries";
 
 type Props = {

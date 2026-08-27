@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getActor } from "@kernel/auth";
+import { getActor } from "@platform/auth";
 import { listRefunds } from "@apps/refunds/queries";
 
 export const dynamic = "force-dynamic";
