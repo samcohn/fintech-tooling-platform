@@ -13,7 +13,7 @@ const SECTIONS = [
   },
   {
     label: "Platform",
-    items: [{ href: "/admin/change-request", label: "Request a change" }],
+    items: [{ href: "/platform/requests", label: "Change requests" }],
   },
 ];
 

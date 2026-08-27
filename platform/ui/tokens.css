@@ -311,6 +311,13 @@ tr.k-spacer td {
   color: var(--ink-secondary);
 }
 
+.k-cell-truncate {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .k-cell-muted {
   color: var(--ink-muted);
   font-size: 12px;
@@ -374,8 +381,45 @@ tr.k-spacer td {
 }
 
 .badge[data-status="blocked"] {
-  color: var(--sig-refused);
+  color: var(--danger);
   padding-left: 0;
+}
+
+/* Change-request statuses. */
+.badge[data-status="triaging"] {
+  border: var(--hairline) solid var(--rule);
+  padding: 1.5px 6.5px;
+}
+
+.badge[data-status="awaiting_spec"] {
+  background: var(--sig-review-tint);
+  color: var(--sig-review);
+}
+
+.badge[data-status="in_progress"] {
+  color: var(--sig-review);
+  padding-left: 0;
+}
+
+.badge[data-status="pr_open"] {
+  background: var(--sig-cleared-tint);
+  color: var(--sig-cleared);
+}
+
+.badge[data-status="merged"] {
+  color: var(--sig-cleared);
+  padding-left: 0;
+}
+
+/* Lane mark: a muted pill, no semantic color. */
+.lane-pill {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 1.5px 8px;
+  border-radius: 999px;
+  background: var(--wash);
+  color: var(--ink-secondary);
 }
 
 /* ------------------------------------------------------------ inputs */

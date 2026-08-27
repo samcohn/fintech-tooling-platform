@@ -61,6 +61,33 @@ export const refundRequests = pgTable(
   (t) => [uniqueIndex("refund_idempotency_key_uq").on(t.idempotencyKey)]
 );
 
+export const crLaneEnum = pgEnum("cr_lane", ["app", "platform"]);
+
+export const crStatusEnum = pgEnum("cr_status", [
+  "triaging",
+  "awaiting_spec",
+  "in_progress",
+  "pr_open",
+  "blocked",
+  "merged",
+]);
+
+export const changeRequests = pgTable("change_request", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  request: text("request").notNull(),
+  requestedBy: uuid("requested_by")
+    .notNull()
+    .references(() => users.id),
+  submittedAt: timestamp("submitted_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lane: crLaneEnum("lane"),
+  status: crStatusEnum("status").notNull().default("triaging"),
+  prUrl: text("pr_url"),
+  blockedReason: text("blocked_reason"),
+  classificationReasoning: text("classification_reasoning"),
+});
+
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
   actorId: uuid("actor_id")
@@ -78,6 +105,9 @@ export const auditLog = pgTable("audit_log", {
 });
 
 export type User = typeof users.$inferSelect;
+export type ChangeRequest = typeof changeRequests.$inferSelect;
+export type CrLane = NonNullable<ChangeRequest["lane"]>;
+export type CrStatus = ChangeRequest["status"];
 export type RefundRequest = typeof refundRequests.$inferSelect;
 export type AuditRow = typeof auditLog.$inferSelect;
 export type RefundStatus = RefundRequest["status"];
