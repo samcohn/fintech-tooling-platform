@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import { Newsreader } from "next/font/google";
 import "@platform/ui/tokens.css";
 import { getActor } from "@platform/auth";
@@ -28,7 +27,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${newsreader.variable}`}
+      className={`${GeistSans.variable} ${newsreader.variable}`}
     >
       <body>
         <div className="k-shell">
@@ -38,6 +37,9 @@ export default async function RootLayout({
             </Link>
             <SideNav />
             <span className="spacer" />
+            <Link href="/admin/change-request" className="k-cr-btn">
+              Request a change
+            </Link>
             <div className="k-who">
               {actor ? (
                 <>

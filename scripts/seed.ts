@@ -77,39 +77,75 @@ async function main() {
   const chargeRows: ChargeInsert[] = [];
   const refundRows: RefundInsert[] = [];
 
-  // Six charge pairs sharing a charge_id, to exercise double-refund
-  // protection: two partial refunds against one charge.
-  for (let p = 0; p < 6; p++) {
-    const chargeId = `ch_pair_${1000 + p}`;
-    const chargeAmount = 120_000 + p * 10_000;
-    const email = `${pick(FIRST, p)}.${pick(LAST, p)}@example.com`;
+  // Every charge ID unique. Deterministic rows guarantee one of each
+  // required shape: below-threshold pending, above-threshold pending,
+  // an own-recommendation row, a failed settlement, a settled row,
+  // and a large fraudulent refund on a throwaway domain.
+  const fixtures: Array<{
+    amount: number;
+    reason: string;
+    status: (typeof statuses)[number];
+    email?: string;
+    recommendedBy?: string;
+    committedBy?: string;
+  }> = [
+    { amount: 8_450, reason: "duplicate_charge", status: "pending" },
+    { amount: 187_500, reason: "billing_error", status: "pending" },
+    {
+      amount: 92_000,
+      reason: "customer_request",
+      status: "recommended",
+      recommendedBy: agent.id,
+    },
+    {
+      amount: 64_300,
+      reason: "billing_error",
+      status: "failed",
+      recommendedBy: agent2.id,
+      committedBy: approver.id,
+    },
+    {
+      amount: 12_900,
+      reason: "subscription_canceled",
+      status: "settled",
+      recommendedBy: agent2.id,
+      committedBy: approver.id,
+    },
+    {
+      amount: 268_000,
+      reason: "fraudulent",
+      status: "pending",
+      email: "kx9042@mailinator.com",
+    },
+  ];
+  fixtures.forEach((f, p) => {
+    const chargeId = `ch_${1000 + p}`;
+    const email =
+      f.email ?? `${pick(FIRST, p + 3)}.${pick(LAST, p + 1)}@gmail.com`;
     chargeRows.push({
       id: chargeId,
       customerEmail: email,
-      amountCents: chargeAmount,
+      amountCents: f.amount + 4_000 + p * 900,
     });
-    for (let half = 0; half < 2; half++) {
-      const amount = Math.floor(chargeAmount / 3) + half * 500;
-      refundRows.push({
-        chargeId,
-        customerEmail: email,
-        cardLast4: String(4000 + p * 7 + half).slice(-4),
-        billingAddress: `${100 + p} ${pick(STREETS, p)}, ${pick(CITIES, p)}`,
-        amountCents: amount,
-        currency: "USD",
-        reasonCode: pick(REASONS, p + half),
-        requestedBy: half === 0 ? agent.id : agent2.id,
-        status: "pending",
-        idempotencyKey: `idem_${chargeId}_${half}`,
-        // Scatter the shared-charge pairs through the queue instead of
-        // clustering them at the top.
-        createdAt: new Date(
-          now - Math.floor(rand(p * 2 + half + 900) * 13) * 86_400_000 -
-            (p * 5 + half * 3) * 3_600_000
-        ),
-      });
-    }
-  }
+    refundRows.push({
+      chargeId,
+      customerEmail: email,
+      cardLast4: String(4000 + p * 7).slice(-4),
+      billingAddress: `${100 + p} ${pick(STREETS, p)}, ${pick(CITIES, p)}`,
+      amountCents: f.amount,
+      currency: "USD",
+      reasonCode: f.reason,
+      requestedBy: p % 2 === 0 ? agent.id : agent2.id,
+      recommendedBy: f.recommendedBy ?? null,
+      committedBy: f.committedBy ?? null,
+      status: f.status,
+      idempotencyKey: `idem_${chargeId}`,
+      createdAt: new Date(
+        now - Math.floor(rand(p * 2 + 900) * 13) * 86_400_000 -
+          p * 5 * 3_600_000
+      ),
+    });
+  });
 
   // 188 more spread across statuses with a realistic amount
   // distribution and dates across ~14 days.
@@ -118,7 +154,11 @@ async function main() {
     const amount = realisticAmount(i);
     const below = amount < 50_000;
     const chargeAmount = amount + ((i * 137) % 20_000);
-    const email = `${pick(FIRST, i)}.${pick(LAST, i * 3 + 1)}${i}@example.com`;
+    const domain = pick(
+      ["gmail.com", "yahoo.com", "outlook.com", "icloud.com", "hey.com"],
+      i * 7 + 1
+    );
+    const email = `${pick(FIRST, i)}.${pick(LAST, i * 3 + 1)}${i}@${domain}`;
     const status = pick([...statuses], i);
     const recommended =
       status === "recommended" ||

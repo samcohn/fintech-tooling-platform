@@ -51,7 +51,7 @@ export default async function RefundDetail({
           </tr>
           <tr>
             <td>Card</td>
-            <td className="mono">•••• {row.cardLast4}</td>
+            <td className="ident">•••• {row.cardLast4}</td>
           </tr>
           <tr>
             <td>Billing address</td>
@@ -65,7 +65,7 @@ export default async function RefundDetail({
           </tr>
           <tr>
             <td>Idempotency key</td>
-            <td className="mono">{row.idempotencyKey}</td>
+            <td className="ident">{row.idempotencyKey}</td>
           </tr>
           <tr>
             <td>Created</td>
