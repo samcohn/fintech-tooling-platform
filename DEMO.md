@@ -52,5 +52,5 @@ Non-engineers don't even need the form: with the Devin Slack app
 installed, an ops lead tags `@Devin` in a channel — "add a chargeback
 reason field to the refunds app" — and the same playbook-governed loop
 runs: branch, gates, PR or a written refusal. The integration is the
-Slack app install plus pinning `playbooks/internal-tool-change.md` as
+Slack app install plus pinning `playbooks/app-change.md` as
 knowledge; no code on our side.

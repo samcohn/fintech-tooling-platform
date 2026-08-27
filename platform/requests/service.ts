@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db/client";
 import {
@@ -7,6 +9,16 @@ import {
   type CrStatus,
 } from "../db/schema";
 import { writeAudit } from "../audit";
+import { classifyRequest, writeTriageFile } from "./triage";
+import {
+  triggerDevinSession,
+  type DevinSessionResult,
+} from "../devin/client";
+import { loadPlaybook, interpolate } from "../devin/playbook";
+
+function specExists(id: string): boolean {
+  return existsSync(join(process.cwd(), ".devin", "specs", `${id}.md`));
+}
 
 export type Actor = { id: string; email: string; name: string };
 
@@ -38,6 +50,7 @@ export async function createChangeRequest(
       .insert(changeRequests)
       .values({ request, requestedBy: actor.id })
       .returning();
+    if (!row) throw new Error("change request insert returned no row");
     await writeAudit(tx, {
       actorId: actor.id,
       actorEmail: actor.email,
@@ -48,6 +61,78 @@ export async function createChangeRequest(
     });
     return row;
   });
+}
+
+/**
+ * Full submit pipeline: record the request, run triage before any
+ * Devin session is dispatched, then route by lane. App lane dispatches
+ * under playbooks/app-change.md. Platform lane requires a
+ * human-authored spec at .devin/specs/{id}.md before any work starts;
+ * absent that, the request parks at awaiting_spec.
+ */
+export async function submitChangeRequest(
+  actor: Actor,
+  request: string
+): Promise<ChangeRequest> {
+  const created = await createChangeRequest(actor, request);
+  const triage = classifyRequest(request);
+  writeTriageFile(created.id, triage);
+
+  let status: ChangeRequest["status"];
+  let devin: DevinSessionResult | null = null;
+
+  if (triage.lane === "platform") {
+    status = specExists(created.id) ? "in_progress" : "awaiting_spec";
+    if (status === "in_progress") {
+      devin = await triggerDevinSession(
+        interpolate(loadPlaybook("platform-change"), {
+          request,
+          requester: `${actor.name} <${actor.email}>`,
+          app: "platform",
+          id: created.id,
+        })
+      );
+    }
+  } else {
+    devin = await triggerDevinSession(
+      interpolate(loadPlaybook("app-change"), {
+        request,
+        requester: `${actor.name} <${actor.email}>`,
+        app: "refunds",
+        id: created.id,
+      })
+    );
+    status = "in_progress";
+  }
+
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(changeRequests)
+      .set({
+        lane: triage.lane,
+        status,
+        classificationReasoning: triage.reasoning,
+      })
+      .where(eq(changeRequests.id, created.id))
+      .returning();
+    if (!row) throw new Error(`change request ${created.id} not found`);
+    await writeAudit(tx, {
+      actorId: actor.id,
+      actorEmail: actor.email,
+      action: "change_request.triaged",
+      entityType: "change_request",
+      entityId: created.id,
+      after: {
+        lane: triage.lane,
+        status,
+        touchedPaths: triage.touchedPaths,
+        devin,
+      },
+    });
+    return row;
+  });
+
+  return updated;
 }
 
 export type StatusPatch = {
@@ -79,6 +164,7 @@ export async function updateRequestStatus(
       })
       .where(eq(changeRequests.id, id))
       .returning();
+    if (!after) return null;
     await writeAudit(tx, {
       actorId: actor.id,
       actorEmail: actor.email,

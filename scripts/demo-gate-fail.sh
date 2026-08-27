@@ -20,6 +20,6 @@ status=$?
 git checkout -- platform/rbac/index.ts
 echo
 echo "── platform edit reverted; gates exited with status $status"
-echo '── per playbooks/internal-tool-change.md: no PR is opened,'
+echo '── per playbooks/app-change.md: no PR is opened,'
 echo '── reasoning is written to .devin/blocked.md instead'
 exit $status

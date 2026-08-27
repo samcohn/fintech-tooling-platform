@@ -1,7 +1,7 @@
-# Playbook — internal tool change request
+# Playbook — app-lane change request
 
-Loaded at runtime by `/platform/devin` and interpolated with
-`{{request}}`, `{{requester}}`, `{{app}}`, `{{id}}`.
+Scoped to `/apps/**`. Loaded at runtime by `/platform/devin` and
+interpolated with `{{request}}`, `{{requester}}`, `{{app}}`, `{{id}}`.
 
 ---
 
@@ -36,7 +36,7 @@ Run `pnpm validate:cr`. It must exit 0. If it fails, fix and re-run.
 1. The original request, verbatim.
 2. A plain-English summary the requester can verify without reading code.
 3. The gate output.
-4. A tag for the on-call platform engineer.
+4. A tag for the on-call platform engineer (@oncall).
 
 ---
 
