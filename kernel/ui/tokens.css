@@ -249,6 +249,7 @@ table.k-table th {
 table.k-table td {
   padding: var(--cell-pad-y) var(--cell-pad-x) var(--cell-pad-y) 0;
   height: var(--row-h);
+  line-height: 18px;
   border-bottom: var(--hairline) solid var(--rule);
   white-space: nowrap;
   vertical-align: middle;
@@ -270,6 +271,8 @@ table.k-table tbody tr {
   cursor: default;
   transition: background-color 100ms linear;
   scroll-margin-top: 34px;
+  /* Clear the fixed keyboard legend when auto-scrolling downward. */
+  scroll-margin-bottom: 34px;
 }
 
 table.k-table tbody tr:hover {
