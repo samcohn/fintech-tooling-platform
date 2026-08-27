@@ -6,7 +6,7 @@ export function FilterBar({ children }: { children: ReactNode }) {
 
 /** Sentence-case status mark. Only unresolved states get chrome. */
 export function StatusBadge({ status }: { status: string }) {
-  const spaced = status.replace(/_/g, " ");
+  const spaced = status.replace(/_/g, " ").replace(/\bpr\b/i, "PR");
   const label = spaced.charAt(0).toUpperCase() + spaced.slice(1);
   return (
     <span className="badge" data-status={status}>

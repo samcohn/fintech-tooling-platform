@@ -53,9 +53,9 @@ export function classifyRequest(request: string): TriageResult {
       : ["- /apps/refunds (default app surface; no path signals matched)"]),
     ``,
     lane === "platform"
-      ? `Lane: platform. The request touches /platform/** (${platformHits
-          .map((h) => `/${h.path}`)
-          .join(", ")}). Platform changes require a human-authored spec at ` +
+      ? `Lane: platform. The request touches /platform/** (${[
+          ...new Set(platformHits.map((h) => `/${h.path}`)),
+        ].join(", ")}). Platform changes require a human-authored spec at ` +
         `.devin/specs/{id}.md before any code is written, run the full ` +
         `invariant suite, and need CODEOWNERS review on /platform.`
       : `Lane: app. Nothing in the request resolves to /platform/**; the ` +
