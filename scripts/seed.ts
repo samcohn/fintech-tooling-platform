@@ -237,7 +237,10 @@ async function main() {
       status,
       idempotencyKey: `idem_${chargeId}`,
       createdAt: new Date(
-        now - Math.floor(rand(i + 700) * 14) * 86_400_000 - (i % 24) * 3_600_000
+        now -
+          6 * 3_600_000 -
+          Math.floor(rand(i + 700) * 14) * 86_400_000 -
+          (i % 24) * 3_600_000
       ),
     });
   }
