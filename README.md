@@ -24,6 +24,11 @@ refusal is audited.
 change in plain English. Requests are triaged into an app lane or a
 platform lane and dispatched to Devin with the matching playbook.
 
+**Audit log** (`/platform/audit`) — read-only view of the append-only
+log, filterable by actor and action. Refund transitions, unmasks, access
+denials and change-request submissions share one table; there is no
+second log. Compliance-only, and the log has no update or delete path.
+
 ## Change request lanes
 
 | | App lane | Platform lane |
@@ -77,9 +82,15 @@ swaps in OIDC.
 | `agent@demo.co` | agent | Refunds |
 | `agent2@demo.co` | agent | Refunds |
 | `approver@demo.co` | approver | Refunds, approvals |
-| `compliance@demo.co` | compliance | Refunds, KYC |
+| `compliance@demo.co` | compliance | Refunds, KYC, audit log |
 
-To see the access boundary: sign in as `agent@demo.co` and open `/kyc`.
+To see the access boundary: sign in as `agent@demo.co` and open `/kyc`
+or `/platform/audit`. Both are compliance-only, and both refusals are
+themselves audited.
+
+There is no account switcher and no sign-out: identity is a session
+cookie, so use a second browser profile or a private window to hold two
+roles at once.
 
 ## Optional environment variables
 
@@ -89,6 +100,7 @@ To see the access boundary: sign in as `agent@demo.co` and open `/kyc`.
 | `SLACK_WEBHOOK_INTERNAL_TOOLS` | app-lane notices go to `.devin/slack-outbox.md` |
 | `SLACK_WEBHOOK_PLATFORM` | platform-lane notices go to `.devin/slack-outbox.md` |
 | `REFUND_APPROVAL_THRESHOLD_CENTS` | defaults to 50000 |
+| `REFUND_APPROVER_ROLES` | no role restriction; set e.g. `agent,approver` to require an approver role in addition to the amount threshold |
 | `DEMO_REPLAY` | submissions always dispatch; set `true` so text matching `demo/staged-requests.json` replays the staged final state (with a 1.2s triaging beat) instead of spawning a session |
 
 ## Keyboard shortcuts
