@@ -1,0 +1,310 @@
+# Demo runbook
+
+Everything below runs on your machine. The recording never depends on a
+live Devin session — the three scripted requests replay from staged
+records.
+
+## 1. One-time setup
+
+Prerequisites: Node 20+, pnpm 9, Docker.
+
+```sh
+git clone https://github.com/samcohn/fintech-tooling-platform.git
+cd fintech-tooling-platform
+git checkout devin/1787629172-internal-platform   # or merge PR #1 and use main
+pnpm install
+
+# Postgres
+docker run -d --name pg -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=internal_tools -p 5432:5432 postgres:16
+
+# Environment
+cp .env.example .env
+```
+
+Edit `.env`:
+
+- `NEXTAUTH_SECRET` — any string.
+- `DEMO_REPLAY=true` — required for the scripted submissions.
+- `REFUND_APPROVER_ROLES=agent,approver` — makes the role-based rule
+  active for the post-merge shot without breaking the agent's below-
+  threshold Approve.
+- `SLACK_WEBHOOK_INTERNAL_TOOLS` / `SLACK_WEBHOOK_PLATFORM` — real
+  webhook URLs for `#internal-tools` and `#platform` if you want the
+  staging script to post real Slack messages (see §4).
+- Leave `DEVIN_API_KEY` unset for the demo — matching text never
+  dispatches, but non-matching text would.
+
+## 2. Stage the data
+
+```sh
+pnpm db:migrate
+pnpm db:seed                # refunds + users (truncates demo tables)
+pnpm demo:stage-requests    # the 3 staged change requests + spec + blocked.md
+```
+
+Re-run `pnpm demo:stage-requests` after **any** reseed — `pnpm db:seed`
+wipes the change-request table.
+
+```sh
+pnpm dev                    # http://localhost:3000
+```
+
+## 3. Window setup (pre-flight)
+
+### Who can reach what
+
+Resolved by `canAccessApp` in `platform/rbac`, server-side, per role:
+
+| Surface | `/refunds`, `/refunds/approvals` | `/platform/requests` | `/kyc` | `/platform/audit` |
+| --- | --- | --- | --- | --- |
+| `agent@demo.co` (Avery) | yes | yes | **refused** | **refused** |
+| `approver@demo.co` (Priya) | yes | yes | **refused** | **refused** |
+| `compliance@demo.co` (Casey) | yes | yes | yes | yes |
+
+**Only Casey can open the audit log.** Same gate as KYC. A refusal is
+not a bug: it renders the platform-layer message and writes an
+`access_denied` audit row.
+
+The sidebar nav shows all four links to **every** role — it is not
+role-aware. So Avery and Priya both see "KYC" and "Audit log" and both
+get refused on click. Expected; don't let it read as broken on camera.
+
+`/platform/requests` — including the submit form — is open to any
+signed-in user. Only the two sensitive surfaces are gated.
+
+### Identity is per cookie jar
+
+There is no account switcher and no sign-out link. One identity per
+cookie jar, and in Chrome every incognito window shares a single jar, so
+three identities means three distinct jars: normal profile, incognito,
+and a Guest window (or a second profile).
+
+Sign in at `http://localhost:3000/api/auth/signin`, email only. Signing
+in again in the same jar **silently replaces** that identity with no
+confirmation beyond the sidebar footer.
+
+**Pre-flight check, all three windows:** read the sidebar footer and
+confirm it says the name, email and role you expect. Getting Approve on
+both the $750 and the $499 rows means that window is Priya, not Avery —
+see §6. Re-check all three footers after any reseed, since a reseed
+regenerates user ids and invalidates every session at once.
+
+- **Window A** — normal profile, `agent@demo.co` (email only, no
+  password), on `http://localhost:3000/refunds`. Top of the queue:
+  $750.00 pending (Recommend), $499.00 pending (Approve), a recommended
+  row. The "All" tab shows the two `ch_0999` rows, one Settled. Second
+  tab: `/kyc`, for the refusal shot.
+- **Window B** — incognito, sign in as
+  `compliance@demo.co`, open `http://localhost:3000/platform/requests`.
+  Three rows, all requested by Casey Compliance: app / PR open (with PR
+  link), platform / Merged, platform / Blocked. The page has no filters
+  and no date range — it is always the full all-time history, newest
+  first. Click any row for its classification reasoning.
+  Second tab: `/platform/audit` — this is the only jar it works in.
+- **Window C** — Guest window (or a second Chrome profile) as
+  `approver@demo.co` (Priya Approver) on
+  `http://localhost:3000/refunds/approvals`, for the approval. Second
+  tab `/refunds`, for the role-based approval shot.
+- **Slack**: two windows side by side, `#internal-tools` and
+  `#platform` (messages posted by the staging script, §4).
+- **Editor**: repo tree expanded two levels; have
+  `.devin/specs/{id}.md` and the merged PR (CODEOWNERS approval +
+  passing checks) ready to show. `{id}` is printed by
+  `pnpm demo:stage-requests` — the platform/merged line.
+- **Audit log**: `http://localhost:3000/platform/audit`, Window B only.
+  Two filters (actor, action) plus **Clear filters**; both default to
+  "All", so the unfiltered all-time view is what loads. 500 rows max,
+  newest first.
+
+## 4. Slack
+
+Put both webhook URLs in `.env` and run `pnpm demo:stage-requests`. The
+`db:migrate`, `db:seed` and `demo:stage-requests` scripts run under
+`node --env-file=.env`, so they see `.env` the same way the server does.
+A shell-exported variable still wins over the file, which is what keeps
+the scratch-database workflow in §9 working.
+
+Without URLs, notices fall through to `.devin/slack-outbox.md` — do not
+show that file on camera.
+
+Create the webhooks at Slack → Apps → Incoming Webhooks, one per
+channel. Verified message counts per staging run: **2 to
+`#internal-tools`** (triaged, then `Gates passed. PR: …`) and **6 to
+`#platform`** — the role request walks triaged → in_progress → pr_open →
+merged, and the blocked request adds triaged → blocked. For Click 6 the
+message you want is the *first* platform one, the "needs a spec" notice.
+
+Two consequences for choreography:
+
+- **Every message is posted at staging time, not at submit time.**
+  Replay writes an audit row and attaches to the staged row; it does not
+  notify. Nothing lands in Slack while you are on camera. Re-stage
+  immediately before recording if you want plausible timestamps.
+- **The blocked message is already in `#platform` before Click 9.**
+  Staging walks all three requests to their final state, so `#platform`
+  holds the role-request thread *and* the blocked thread from the start.
+  Don't scroll past the message you're talking about.
+
+The messages tag `@oncall` (app) and `@platform-owner` (platform) as
+**literal text** — the webhook sends a plain `text` payload, so Slack
+renders them unlinked, not as mentions. No message names Priya. If you
+need a real highlighted mention, `platform/requests/slack.ts` has to
+emit `<@U…>` for a user or `<!subteam^S…>` for a group, using real
+Slack IDs. Otherwise don't zoom in on the tag, or say "the platform
+owner" rather than implying a notification fired.
+
+## 5. The scripted submissions (exact text)
+
+With `DEMO_REPLAY=true`, typing any of these into the request form
+shows `triaging` for ~1.2s and then resolves to the staged state — no
+Devin session is created, no duplicate row appears:
+
+1. `Add a column showing prior refund count` → app lane, **PR open**
+   with live PR link.
+2. `We need approvers assigned by role, not just by amount` →
+   platform lane, **Merged**.
+3. `Let agents approve their own refunds up to $2,000` →
+   platform lane, **Blocked**. Click the row: the panel shows the
+   blocked reason and the full `blocked.md` contents.
+
+All three are staged as `compliance@demo.co`, so type all three from
+Window B as Casey. Replay attaches your submission to the staged row
+without reassigning it — the Requester column always shows the staged
+requester, whoever is signed in.
+
+Matching is normalized (case, whitespace, punctuation don't matter), so
+`$2,000`, `$2000` and `2,000` all match — but spelled-out numbers do
+not. Type the digits. Any other text behaves normally — with no
+`DEVIN_API_KEY` it dry-runs.
+
+Then, in a terminal, `pnpm demo:gate-fail` — the Blocked row is the
+outcome, the gate output is why.
+
+## 6. The app walk (Window A)
+
+Sign in as `agent@demo.co`. Walk the refund queue: dense rows, keyboard
+review (`j`/`k`/`a`/`r`/`Enter`), masked PII with audited unmask.
+
+- Select the **$499.00** row → the agent sees **approve** directly.
+- Select the **$750.00** row → the agent sees **recommend**, not
+  approve. The boundary is visible, not hidden.
+
+The button is whatever `primaryAction` picks, which prefers approve over
+recommend. Threshold is $500, so the correct rendering is:
+
+| Row | as Avery (agent) | as Priya (approver) |
+| --- | --- | --- |
+| $750.00 pending | **Recommend** | Approve |
+| $499.00 pending | **Approve** | Approve |
+
+Approve on **both** rows means the window is Priya, not Avery. Fix the
+session before rolling, not the code.
+- Recommend it, then switch to Priya Approver and approve it from the
+  Approvals queue. Point out the recommender's name on the row and that
+  self-approval is blocked at the route as well as the UI.
+
+There is **no account switcher and no sign-out link** — the sidebar
+footer prints the current identity as static text. Switching identity is
+a swap to a third pre-authed window (`approver@demo.co`), set up before
+recording. Don't try to change users mid-shot.
+
+Priya is the approver in the refunds app *and* the notional platform
+reviewer for the merged spec. Nothing on screen renders her as the
+reviewer — the PR and CODEOWNERS both show `@platform-owner` — so
+either name the double role out loud, or attribute the review to a
+fourth person in voiceover only and never put a name on screen.
+
+## 7. Access boundary shot
+
+In **Window A** as `agent@demo.co`, click **KYC** in the sidebar — the
+refusal renders at the platform layer and writes an `access_denied`
+audit row with null before/after. In **Window B** as
+`compliance@demo.co`, `/kyc` shows the three cases.
+
+`/platform/audit` behaves identically for the same reason, so it doubles
+as the same shot if you want it. Both are `["compliance"]` in
+`APP_ACCESS`.
+
+## 8. The audit shot (Part Three)
+
+**Window B only** — Casey is the only role that can open this page (§3).
+If it renders the refusal, that jar is not Casey.
+
+`pnpm db:seed` truncates `audit_log`, so immediately after a reseed the
+only entries are the six change-request rows written by the staging
+script. `refund.*`, `unmask` and `access_denied` rows exist **only if
+you performed those actions in this take** — so Part One (recommend,
+approve, an unmask, `/kyc` as Avery) has to happen before Part Three,
+or the "who moved money, who looked at customer data, who tried to open
+a tool they weren't in" line has nothing behind it.
+
+Filter to Avery to make the point, then **Clear filters** for the
+full history. Click any row for before/after JSON.
+
+## 9. Run the gates against a scratch database
+
+**Important for the Part Three audit shot.** `validate:cr` gates 2-6 run
+against a live database and insert their own fixture users — Gate Agent,
+Gate Approver, Audit Tester, Access Agent — plus real `refund.*` audit
+rows. `pnpm test` does the same. Run either against the demo database
+and the audit log's actor dropdown fills with obvious test fixtures.
+
+One-time:
+
+```sh
+psql postgres://postgres:postgres@localhost:5432/postgres \
+  -c "CREATE DATABASE gates_scratch;"
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/gates_scratch \
+  pnpm db:migrate && pnpm db:seed
+```
+
+Then run every gate command with the scratch URL:
+
+```sh
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/gates_scratch
+pnpm demo:gate-pass    # all six pass
+pnpm demo:gate-fail    # gate 1 fails, exit 1
+```
+
+Verified: gate 1 reports exactly `platform/rbac/index.ts` and nothing
+else, provided the working tree is committed first. Uncommitted
+`platform/` edits are listed alongside it and muddy the beat.
+
+Unset `DATABASE_URL` (or use a separate terminal) before touching the
+app or the staging scripts.
+
+## 10. Reset between takes
+
+```sh
+pnpm db:seed && pnpm demo:stage-requests
+```
+
+`db:seed` truncates `audit_log`, so this also clears any fixture rows
+that leaked in. Staging writes `.devin/specs/{id}.md` and
+`.devin/blocked/{id}.md` under fresh ids each run without removing the
+previous ones, so prune the orphans if `.devin/` will be on camera —
+keep only the two ids printed by the staging run:
+
+```sh
+ls .devin/specs .devin/blocked
+```
+
+Sign-ins survive a reseed only if user IDs are re-created identically —
+they are not, so sign out/in again after reseeding.
+
+## Troubleshooting
+
+- **Row hangs on triaging / duplicate row created**: `DEMO_REPLAY` is
+  not `true` in `.env`, or the dev server was started before it was
+  set — restart `pnpm dev`.
+- **Requests queue empty**: you reseeded without re-running
+  `pnpm demo:stage-requests`.
+- **`ECONNREFUSED :5432`**: Postgres isn't running — `docker start pg`,
+  or `brew services start postgresql@16` on a local install (Sam's
+  machine has no Docker CLI; Postgres is local).
+- **Audit log full of Gate Agent / Audit Tester rows**: the gates or
+  `pnpm test` ran against the demo database — see §9, then reseed.
+- **Blocked panel missing blocked.md**: the file lives at
+  `.devin/blocked/{id}.md` and is written by the staging script — run
+  it from the repo root.

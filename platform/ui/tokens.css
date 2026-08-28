@@ -1,0 +1,1102 @@
+:root {
+  /* ---- Surfaces -------------------------------------------------- */
+  --paper:          #FFFFFF;  /* page and table ground              */
+  --surface-sidebar:#F7F7F6;
+  --surface-fill:   #F5F5F4;  /* stat cards                         */
+  --surface-band:   #F7F7F6;  /* table header row                   */
+  --surface-hover:  #FAFAF9;  /* row hover                          */
+  --surface-active: #F0F0EE;  /* selected tab, quiet button         */
+
+  /* ---- Ink (five steps, no more) --------------------------------- */
+  --ink:            #1A1A19;  /* primary values, nav, amounts       */
+  --ink-secondary:  #57564F;
+  --ink-muted:      #8A8880;  /* column headers, meta               */
+  --ink-faint:      #A8A69E;  /* sublines, placeholders             */
+  --ink-fainter:    #C2C0B8;  /* em-dashes, disabled                */
+
+  /* ---- Rules ----------------------------------------------------- */
+  --rule:           #EAEAE8;  /* structural: sidebar edge, dividers */
+  --rule-row:       #EDEDEB;  /* row separators                     */
+
+  /* ---- Key color. One accent. ------------------------------------ */
+  --key:            #1324F5;
+  --key-tint:       #EEF0FE;  /* pill backgrounds                   */
+  --key-tint-2:     #E7E9FE;  /* active nav badge                   */
+  --marker-ghost:   #CFCDC6;  /* nav hover preview marker           */
+
+  /* ---- Status families ------------------------------------------- */
+  --amber-ink:      #7A5A18;  --amber-bg: #F7E9CE;  --amber-dot: #C08A2E;
+  --green-ink:      #2C6140;  --green-bg: #E7F2EA;  --green-dot: #4C8A63;
+  --red-ink:        #8C3A32;  --red-bg:   #FBEAE8;  --red-dot:   #B2564C;
+  --neutral-ink:    #57564F;  --neutral-bg:#F0F0EE; --neutral-dot:#A8A69E;
+  --quiet-ink:      #8A8880;  --quiet-bg: #F5F5F4;  --quiet-dot: #C2C0B8;
+
+  /* ---- Type ------------------------------------------------------ */
+  --font-display: "Newsreader", Georgia, serif;
+  --font-sans:    "Geist", ui-sans-serif, -apple-system, sans-serif;
+
+  /* ---- Radius ---------------------------------------------------- */
+  --r-card:   10px;
+  --r-control: 7px;
+  --r-badge:  5px;
+  --r-pill:   999px;
+
+  /* ---- Metrics --------------------------------------------------- */
+  --sidebar-w:    200px;
+  --row-pad-y:    12px;
+  --row-pad-x:    14px;
+  --row-max:      68px;   /* collapse target for resolved rows */
+  --nav-item-h:   30px;
+  --marker-w:     2px;
+  --marker-h:     13px;
+  --dot:          5px;
+
+  /* ---- Motion (see §13) ------------------------------------------ */
+  --ease:         cubic-bezier(0.2, 0, 0, 1);
+  --t-instant:    120ms;
+  --t-quick:      150ms;
+  --t-marker:     190ms;
+  --t-collapse:   260ms;
+  --t-reflow:     340ms;
+}
+
+/* Font wiring: next/font + geist expose their families through CSS
+   variables; alias them into the token names above so the loaded
+   files back --font-display and --font-sans. No hex values here. */
+:root {
+  --font-display: var(--font-newsreader), "Newsreader", Georgia, serif;
+  --font-sans: var(--font-geist-sans), "Geist", ui-sans-serif,
+    -apple-system, sans-serif;
+  --page-pad-x: 40px;
+  --page-pad-y: 32px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 13px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+  /* Inherits everywhere: amounts, dates, counts, serif numerals. */
+  font-variant-numeric: tabular-nums;
+}
+
+.num {
+  text-align: left;
+}
+
+/* Identifiers: sans at 11px with tracking, never a monospace. */
+.ident {
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.025em;
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------- shell */
+
+.k-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 100vh;
+}
+
+aside.k-side {
+  background: var(--surface-sidebar);
+  border-right: 1px solid var(--rule);
+  padding: 24px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.k-wordmark {
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0 6px;
+  margin-bottom: 14px;
+}
+
+.k-side-section {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.k-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Two markers: single absolutely-positioned elements that translate. */
+.k-nav-marker {
+  position: absolute;
+  left: 9px;
+  top: 0;
+  width: var(--marker-w);
+  height: var(--marker-h);
+  background: var(--key);
+  transition: transform var(--t-marker) var(--ease);
+  pointer-events: none;
+}
+
+.k-nav-ghost {
+  position: absolute;
+  left: 9px;
+  top: 0;
+  width: var(--marker-w);
+  height: var(--marker-h);
+  background: var(--marker-ghost);
+  opacity: 0;
+  transition: transform var(--t-marker) var(--ease), opacity 140ms linear;
+  pointer-events: none;
+}
+
+.k-side-label {
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 400;
+  margin: 14px 6px 4px 18px;
+}
+
+/* Inactive items are near-black, not gray. The accent identifies. */
+.k-side a.k-side-link {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: var(--nav-item-h);
+  height: var(--nav-item-h);
+  text-decoration: none;
+  padding-left: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 170ms var(--ease);
+}
+
+.k-side a.k-side-link:hover {
+  transform: translateX(2px);
+}
+
+.k-side a.k-side-link[data-active="true"] {
+  color: var(--key);
+}
+
+.k-side-count {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-faint);
+  background: var(--surface-active);
+  border-radius: var(--r-pill);
+  padding: 1px 6px;
+  margin-right: 6px;
+}
+
+a.k-side-link[data-active="true"] .k-side-count {
+  background: var(--key-tint-2);
+  color: var(--key);
+}
+
+.k-side-count[data-bump="true"] {
+  animation: k-badge-bump 380ms var(--ease);
+}
+
+@keyframes k-badge-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.k-side .spacer {
+  flex: 1;
+}
+
+/* Footer: square outlined change-request button, then user block. */
+a.k-cr-btn {
+  display: block;
+  text-align: center;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 5px 10px;
+  margin: 0 6px 12px;
+  text-decoration: none;
+  transition: background-color var(--t-quick) linear,
+    color var(--t-quick) linear;
+}
+
+a.k-cr-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.k-who {
+  border-top: 1px solid var(--rule);
+  padding: 12px 6px 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-faint);
+}
+
+.k-who strong {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  display: block;
+}
+
+.k-who a {
+  color: var(--ink-secondary);
+}
+
+main.k-page {
+  padding: var(--page-pad-y) var(--page-pad-x) 64px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------ header */
+
+/* Page title: display face, one of its two permitted homes. */
+h1.k-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 34px;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+h2 {
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: -0.005em;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.k-pagehead {
+  margin-bottom: 20px;
+}
+
+/* Agent banner. */
+.k-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
+}
+
+.k-banner-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-badge);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  flex: none;
+}
+
+.k-banner .k-banner-when {
+  color: var(--ink-faint);
+}
+
+.k-banner-toggle {
+  font: inherit;
+  font-size: 12px;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* Stat cards: flat fills, no border, no shadow. */
+.k-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+
+.k-stat {
+  background: var(--surface-fill);
+  border-radius: var(--r-card);
+  padding: 16px 18px 14px;
+}
+
+.k-stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.k-stat-num .k-stat-cur {
+  font-size: 20px;
+}
+
+.k-stat-label {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+/* -------------------------------------------------------------- tabs */
+
+.k-viewbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.k-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+button.k-tab {
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background-color var(--t-quick) linear,
+    color var(--t-quick) linear;
+}
+
+button.k-tab[data-active="true"] {
+  background: var(--surface-active);
+  color: var(--ink);
+}
+
+.k-threshold {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.k-threshold .k-threshold-label {
+  color: var(--ink-faint);
+}
+
+.k-threshold .k-threshold-value {
+  color: var(--ink-secondary);
+}
+
+/* Bulk action bar (replaces the tab row when rows are selected). */
+.k-bulkbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+button.k-bulk-destructive {
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--red-ink);
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--red-ink);
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------- table */
+
+/* Header band and rows share this one grid declaration. */
+.k-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1fr) 110px 130px 180px 150px 120px;
+  column-gap: 12px;
+  align-items: center;
+  padding: var(--row-pad-y) var(--row-pad-x);
+}
+
+.k-grid > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.k-thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-band);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-muted);
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.k-row {
+  position: relative;
+  border-bottom: 1px solid var(--rule-row);
+  cursor: default;
+  transition: background-color var(--t-instant) linear;
+  max-height: var(--row-max);
+}
+
+.k-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--marker-w);
+  background: var(--key);
+  opacity: 0;
+  transition: opacity 130ms linear;
+}
+
+.k-row:hover,
+.k-row[data-selected="true"] {
+  background: var(--surface-hover);
+}
+
+.k-row:hover::before,
+.k-row[data-selected="true"]::before {
+  opacity: 1;
+}
+
+/* Resolving a row removes it from the queue. */
+.k-row[data-resolving="true"] {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  overflow: hidden;
+  border-bottom-width: 0;
+  transition: max-height var(--t-collapse) var(--ease),
+    padding var(--t-collapse) var(--ease),
+    opacity var(--t-collapse) var(--ease);
+}
+
+/* Rows entering the view fade in after the reflow settles. */
+.k-row[data-entering="true"] {
+  animation: k-row-enter 280ms linear 80ms backwards;
+}
+
+@keyframes k-row-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Two-line record cell. */
+.k-rec-primary {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
+}
+
+.k-rec-sub {
+  margin-top: 3px;
+}
+
+.k-cell-customer {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Amount: the darkest thing in the right half of a default row. */
+.k-amount {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.k-cell-by {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.k-cell-by[data-own="true"] {
+  color: var(--ink);
+}
+
+/* Agent shimmer: the only gradient permitted anywhere. */
+.k-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--ink-muted) 0%,
+    var(--key) 50%,
+    var(--ink-muted) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: k-shimmer 2.1s linear infinite;
+}
+
+@keyframes k-shimmer {
+  from { background-position: 220% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* The action cell: resting state crossfades to the button. */
+.k-actioncell {
+  position: relative;
+}
+
+.k-action-rest {
+  font-size: 12px;
+  color: var(--ink-faint);
+  transition: opacity var(--t-instant) linear;
+}
+
+.k-action-rest .k-dash {
+  color: var(--ink-fainter);
+}
+
+.k-action-live {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-instant) linear;
+}
+
+.k-row:hover .k-action-rest,
+.k-row[data-selected="true"] .k-action-rest {
+  opacity: 0;
+}
+
+.k-row:hover .k-action-live,
+.k-row[data-selected="true"] .k-action-live {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Rows whose resting state is a reason keep it visible on hover —
+   there is no button to swap to. */
+.k-actioncell[data-reason="true"] .k-action-rest {
+  color: var(--ink-faint);
+}
+
+.k-row:hover .k-actioncell[data-reason="true"] .k-action-rest,
+.k-row[data-selected="true"] .k-actioncell[data-reason="true"] .k-action-rest {
+  opacity: 1;
+}
+
+.k-rowerror {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--red-ink);
+}
+
+.k-empty {
+  padding: 20px var(--row-pad-x);
+  font-size: 13px;
+  color: var(--ink-secondary);
+  text-align: left;
+}
+
+/* ------------------------------------------------------------- pills */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: var(--neutral-bg);
+  color: var(--neutral-ink);
+}
+
+.badge::before {
+  content: "";
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--r-pill);
+  background: var(--neutral-dot);
+  flex: none;
+}
+
+/* key: the system or an agent is engaged. */
+.badge[data-family="key"],
+.badge[data-status="recommended"],
+.badge[data-status="in_progress"],
+.badge[data-status="triaging"],
+.badge[data-status="awaiting_spec"] {
+  background: var(--key-tint);
+  color: var(--key);
+}
+
+.badge[data-family="key"]::before,
+.badge[data-status="recommended"]::before,
+.badge[data-status="in_progress"]::before,
+.badge[data-status="triaging"]::before,
+.badge[data-status="awaiting_spec"]::before {
+  background: var(--key);
+}
+
+/* amber: attention. */
+.badge[data-family="amber"] {
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+}
+
+.badge[data-family="amber"]::before {
+  background: var(--amber-dot);
+}
+
+/* green: authorized, awaiting settlement. */
+.badge[data-family="green"],
+.badge[data-status="approved"],
+.badge[data-status="pr_open"],
+.badge[data-status="merged"] {
+  background: var(--green-bg);
+  color: var(--green-ink);
+}
+
+.badge[data-family="green"]::before,
+.badge[data-status="approved"]::before,
+.badge[data-status="pr_open"]::before,
+.badge[data-status="merged"]::before {
+  background: var(--green-dot);
+}
+
+/* red: a problem. */
+.badge[data-family="red"],
+.badge[data-status="failed"],
+.badge[data-status="blocked"] {
+  background: var(--red-bg);
+  color: var(--red-ink);
+}
+
+.badge[data-family="red"]::before,
+.badge[data-status="failed"]::before,
+.badge[data-status="blocked"]::before {
+  background: var(--red-dot);
+}
+
+/* quiet: terminal states recede. */
+.badge[data-family="quiet"],
+.badge[data-status="settled"],
+.badge[data-status="rejected"] {
+  background: var(--quiet-bg);
+  color: var(--quiet-ink);
+}
+
+.badge[data-family="quiet"]::before,
+.badge[data-status="settled"]::before,
+.badge[data-status="rejected"]::before {
+  background: var(--quiet-dot);
+}
+
+/* Lane mark: neutral family pill. */
+.lane-pill {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 1.5px 8px;
+  border-radius: var(--r-pill);
+  background: var(--neutral-bg);
+  color: var(--neutral-ink);
+}
+
+/* ------------------------------------------------------------ inputs */
+
+button.k-btn {
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  padding: 5px 13px;
+  border: none;
+  border-radius: var(--r-control);
+  background: var(--key);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+button.k-btn:active {
+  opacity: 0.7;
+}
+
+button.k-btn.quiet {
+  background: var(--surface-active);
+  color: var(--ink);
+}
+
+button.k-btn.destructive {
+  background: transparent;
+  border: 1px solid var(--red-ink);
+  color: var(--red-ink);
+}
+
+button.k-seg {
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 3px 10px;
+  border: none;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background-color var(--t-quick) linear,
+    color var(--t-quick) linear;
+}
+
+button.k-seg:hover {
+  background: var(--surface-hover);
+}
+
+button.k-seg[data-active="true"] {
+  color: var(--ink);
+  background: var(--surface-active);
+}
+
+.k-seg .k-count {
+  color: var(--ink-faint);
+  margin-left: 4px;
+}
+
+.k-filterbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+textarea.k-input,
+input.k-input,
+select.k-input {
+  font: inherit;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-control);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 4px 8px;
+}
+
+textarea.k-input {
+  width: 100%;
+  padding: 12px;
+  line-height: 20px;
+  resize: vertical;
+}
+
+button:focus-visible,
+.masked:focus-visible,
+a:focus-visible,
+textarea.k-input:focus-visible,
+input.k-input:focus-visible,
+select.k-input:focus-visible,
+.k-row:focus-visible {
+  outline: 1.5px solid var(--key);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------ masked */
+
+.masked {
+  font: inherit;
+  border: none;
+  border-radius: var(--r-badge);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  padding: 0 2px;
+}
+
+.masked:hover {
+  color: var(--ink);
+}
+
+.masked-revealed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* While revealed: a --dot --key dot precedes the value. */
+.masked-revealed::before {
+  content: "";
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--r-pill);
+  background: var(--key);
+  flex: none;
+}
+
+/* ------------------------------------------------------------ chrome */
+
+.kbd {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-badge);
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-secondary);
+  background: var(--paper);
+}
+
+.k-hint {
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.k-shortcut-line {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-fainter);
+  margin: 12px var(--row-pad-x);
+}
+
+/* Shortcut overlay (opened with ?). */
+.k-shortcuts {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 5;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 20px;
+  row-gap: 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink-secondary);
+}
+
+.k-alert {
+  color: var(--red-ink);
+  font-size: 12px;
+  line-height: 18px;
+  margin: 8px 0;
+}
+
+.k-card {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  padding: 24px;
+  background: var(--paper);
+}
+
+/* ------------------------------------------------------------- panel */
+
+.k-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  background: var(--paper);
+  border-left: 1px solid var(--rule);
+  padding: 28px 24px;
+  overflow-y: auto;
+  z-index: 4;
+  animation: k-panel-in 140ms var(--ease);
+}
+
+@keyframes k-panel-in {
+  from { transform: translateX(24px); }
+  to { transform: translateX(0); }
+}
+
+.k-panel .k-headline {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 32px;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+.k-panel .k-headline-id {
+  margin: 2px 0 16px;
+}
+
+.k-panel dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 8px;
+  font-size: 13px;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+.k-panel dt {
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 20px;
+}
+
+.k-panel dd {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+
+.k-panel .k-close {
+  float: right;
+}
+
+/* --------------------------------------------------- legacy surfaces */
+
+/* The change-requests queue still uses a plain table. */
+table.k-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  margin-top: 20px;
+}
+
+table.k-table th {
+  text-align: left;
+  font-weight: 400;
+  color: var(--ink-muted);
+  padding: 9px var(--row-pad-x) 9px 0;
+  font-size: 11px;
+  line-height: 16px;
+  background: var(--surface-band);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+table.k-table th:first-child {
+  padding-left: var(--row-pad-x);
+}
+
+table.k-table td {
+  padding: var(--row-pad-y) var(--row-pad-x) var(--row-pad-y) 0;
+  line-height: 18px;
+  border-bottom: 1px solid var(--rule-row);
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--ink-secondary);
+}
+
+table.k-table td:first-child {
+  padding-left: var(--row-pad-x);
+}
+
+table.k-table th.num,
+table.k-table td.num {
+  text-align: left;
+}
+
+table.k-table td.k-amount {
+  color: var(--ink);
+  text-align: left;
+}
+
+table.k-table tbody tr {
+  cursor: default;
+  transition: background-color var(--t-instant) linear;
+}
+
+table.k-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+table.k-table tr[data-selected="true"],
+table.k-table tr[data-selected="true"]:hover {
+  background: var(--surface-active);
+}
+
+.k-cell-secondary {
+  color: var(--ink-secondary);
+}
+
+.k-cell-truncate {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.k-cell-muted {
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.k-cell-faint {
+  color: var(--ink-faint);
+}
+
+.k-pagehead-meta {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
+
+.k-sub {
+  color: var(--ink-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  margin: 0 0 16px;
+  max-width: 68ch;
+}
+
+/* --------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .k-panel {
+    animation: none;
+  }
+  .k-shimmer {
+    animation: none;
+    background: none;
+    color: var(--ink-muted);
+  }
+  .k-side a.k-side-link:hover {
+    transform: none;
+  }
+}

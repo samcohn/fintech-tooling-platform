@@ -1,0 +1,28 @@
+[
+  {
+    "requester": "compliance@demo.co",
+    "text": "Add a column showing prior refund count",
+    "lane": "app",
+    "status": "pr_open",
+    "prUrl": "https://github.com/samcohn/fintech-tooling-platform/pull/1",
+    "reasoning": "Classified app lane. The change is a read-only display column on the refunds queue: a per-customer prior refund count derived from existing refund_request rows. Touched paths are confined to /apps/refunds (queries.ts aggregate + QueueClient column). No platform primitive, schema, or authorization rule changes. Dispatched under playbooks/app-change.md; pnpm validate:cr must exit 0 before a PR opens."
+  },
+  {
+    "requester": "compliance@demo.co",
+    "text": "We need approvers assigned by role, not just by amount",
+    "lane": "platform",
+    "status": "merged",
+    "prUrl": "https://github.com/samcohn/fintech-tooling-platform/pull/1",
+    "spec": true,
+    "reasoning": "Classified platform lane. The request changes who may commit an approval — an authorization rule, owned by /platform/rbac. Any diff here is gated: a human-authored spec at .devin/specs/{id}.md must exist before work starts, the full invariant suite must pass, and CODEOWNERS review on /platform is required. Merges are never unattended in this lane."
+  },
+  {
+    "requester": "compliance@demo.co",
+    "text": "Let agents approve their own refunds up to $2,000",
+    "lane": "platform",
+    "status": "blocked",
+    "blockedReason": "self-approval prohibition (platform/rbac canCommit): no actor may commit their own recommendation at any amount",
+    "blockedMd": true,
+    "reasoning": "Classified platform lane. The request modifies the commit rule in /platform/rbac — it would allow an actor to commit their own recommendation below $2,000. That conflicts with the self-approval prohibition, which holds at any amount and is enforced by the authorization invariant gate and its tests. The request cannot be satisfied under either lane without violating a named invariant, so it blocks with .devin/blocked.md and opens no PR."
+  }
+]
