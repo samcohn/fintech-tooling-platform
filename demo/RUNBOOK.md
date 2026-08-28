@@ -52,31 +52,70 @@ pnpm dev                    # http://localhost:3000
 
 ## 3. Window setup (pre-flight)
 
-- **Window A**: sign in as `agent@demo.co` (email only, no password),
-  open `http://localhost:3000/refunds`. Top of the queue: $750.00
-  pending (Recommend), $499.00 pending (Approve), a recommended row.
-  The "All" tab shows the two `ch_0999` rows, one Settled.
-- **Window B**: private/incognito window, sign in as
+### Who can reach what
+
+Resolved by `canAccessApp` in `platform/rbac`, server-side, per role:
+
+| Surface | `/refunds`, `/refunds/approvals` | `/platform/requests` | `/kyc` | `/platform/audit` |
+| --- | --- | --- | --- | --- |
+| `agent@demo.co` (Avery) | yes | yes | **refused** | **refused** |
+| `approver@demo.co` (Priya) | yes | yes | **refused** | **refused** |
+| `compliance@demo.co` (Casey) | yes | yes | yes | yes |
+
+**Only Casey can open the audit log.** Same gate as KYC. A refusal is
+not a bug: it renders the platform-layer message and writes an
+`access_denied` audit row.
+
+The sidebar nav shows all four links to **every** role — it is not
+role-aware. So Avery and Priya both see "KYC" and "Audit log" and both
+get refused on click. Expected; don't let it read as broken on camera.
+
+`/platform/requests` — including the submit form — is open to any
+signed-in user. Only the two sensitive surfaces are gated.
+
+### Identity is per cookie jar
+
+There is no account switcher and no sign-out link. One identity per
+cookie jar, and in Chrome every incognito window shares a single jar, so
+three identities means three distinct jars: normal profile, incognito,
+and a Guest window (or a second profile).
+
+Sign in at `http://localhost:3000/api/auth/signin`, email only. Signing
+in again in the same jar **silently replaces** that identity with no
+confirmation beyond the sidebar footer.
+
+**Pre-flight check, all three windows:** read the sidebar footer and
+confirm it says the name, email and role you expect. Getting Approve on
+both the $750 and the $499 rows means that window is Priya, not Avery —
+see §6. Re-check all three footers after any reseed, since a reseed
+regenerates user ids and invalidates every session at once.
+
+- **Window A** — normal profile, `agent@demo.co` (email only, no
+  password), on `http://localhost:3000/refunds`. Top of the queue:
+  $750.00 pending (Recommend), $499.00 pending (Approve), a recommended
+  row. The "All" tab shows the two `ch_0999` rows, one Settled. Second
+  tab: `/kyc`, for the refusal shot.
+- **Window B** — incognito, sign in as
   `compliance@demo.co`, open `http://localhost:3000/platform/requests`.
   Three rows, all requested by Casey Compliance: app / PR open (with PR
   link), platform / Merged, platform / Blocked. The page has no filters
   and no date range — it is always the full all-time history, newest
   first. Click any row for its classification reasoning.
-- **Window C**: third pre-authed window as `approver@demo.co` (Priya
-  Approver) on `http://localhost:3000/refunds/approvals`, for the
-  approval and the role-based approval shot. Needed because the app has
-  no account switcher.
+  Second tab: `/platform/audit` — this is the only jar it works in.
+- **Window C** — Guest window (or a second Chrome profile) as
+  `approver@demo.co` (Priya Approver) on
+  `http://localhost:3000/refunds/approvals`, for the approval. Second
+  tab `/refunds`, for the role-based approval shot.
 - **Slack**: two windows side by side, `#internal-tools` and
   `#platform` (messages posted by the staging script, §4).
 - **Editor**: repo tree expanded two levels; have
   `.devin/specs/{id}.md` and the merged PR (CODEOWNERS approval +
   passing checks) ready to show. `{id}` is printed by
   `pnpm demo:stage-requests` — the platform/merged line.
-- **Audit log**: `http://localhost:3000/platform/audit`, in Window B.
-  Compliance-only — as Avery it renders the refusal and audits it. Two
-  filters (actor, action) plus **Clear filters**; both default to "All",
-  so the unfiltered all-time view is what loads. 500 rows max, newest
-  first.
+- **Audit log**: `http://localhost:3000/platform/audit`, Window B only.
+  Two filters (actor, action) plus **Clear filters**; both default to
+  "All", so the unfiltered all-time view is what loads. 500 rows max,
+  newest first.
 
 ## 4. Slack
 
@@ -133,6 +172,17 @@ review (`j`/`k`/`a`/`r`/`Enter`), masked PII with audited unmask.
 - Select the **$499.00** row → the agent sees **approve** directly.
 - Select the **$750.00** row → the agent sees **recommend**, not
   approve. The boundary is visible, not hidden.
+
+The button is whatever `primaryAction` picks, which prefers approve over
+recommend. Threshold is $500, so the correct rendering is:
+
+| Row | as Avery (agent) | as Priya (approver) |
+| --- | --- | --- |
+| $750.00 pending | **Recommend** | Approve |
+| $499.00 pending | **Approve** | Approve |
+
+Approve on **both** rows means the window is Priya, not Avery. Fix the
+session before rolling, not the code.
 - Recommend it, then switch to Priya Approver and approve it from the
   Approvals queue. Point out the recommender's name on the row and that
   self-approval is blocked at the route as well as the UI.
@@ -150,12 +200,19 @@ fourth person in voiceover only and never put a name on screen.
 
 ## 7. Access boundary shot
 
-As `agent@demo.co`, open `http://localhost:3000/kyc` — the refusal
-renders at the platform layer and writes an `access_denied` audit row
-with null before/after. As `compliance@demo.co`, `/kyc` shows the three
-cases.
+In **Window A** as `agent@demo.co`, click **KYC** in the sidebar — the
+refusal renders at the platform layer and writes an `access_denied`
+audit row with null before/after. In **Window B** as
+`compliance@demo.co`, `/kyc` shows the three cases.
+
+`/platform/audit` behaves identically for the same reason, so it doubles
+as the same shot if you want it. Both are `["compliance"]` in
+`APP_ACCESS`.
 
 ## 8. The audit shot (Part Three)
+
+**Window B only** — Casey is the only role that can open this page (§3).
+If it renders the refusal, that jar is not Casey.
 
 `pnpm db:seed` truncates `audit_log`, so immediately after a reseed the
 only entries are the six change-request rows written by the staging
