@@ -60,7 +60,7 @@ async function main() {
       { email: "agent@demo.co", name: "Avery Agent", role: "agent" },
       { email: "agent2@demo.co", name: "Alex Agent", role: "agent" },
       { email: "approver@demo.co", name: "Priya Approver", role: "approver" },
-      { email: "compliance@demo.co", name: "Casey Compliance", role: "approver" },
+      { email: "compliance@demo.co", name: "Casey Compliance", role: "compliance" },
     ])
     .returning();
 

@@ -9,7 +9,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const roleEnum = pgEnum("role", ["agent", "approver"]);
+export const roleEnum = pgEnum("role", ["agent", "approver", "compliance"]);
 
 export const refundStatusEnum = pgEnum("refund_status", [
   "pending",

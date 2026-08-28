@@ -10,6 +10,7 @@ const SECTIONS = [
     items: [
       { href: "/refunds", label: "Refund queue" },
       { href: "/refunds/approvals", label: "Approvals" },
+      { href: "/kyc", label: "KYC" },
     ],
   },
   {

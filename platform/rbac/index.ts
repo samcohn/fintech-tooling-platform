@@ -82,3 +82,18 @@ export function canCommit(
   // settle / fail are settlement status updates, open to both roles.
   return true;
 }
+
+export type AppId = "refunds" | "kyc";
+
+/**
+ * App-level access groups, resolved at the platform layer before an
+ * app route runs. Server config, never request input.
+ */
+const APP_ACCESS: Record<AppId, Role[]> = {
+  refunds: ["agent", "approver", "compliance"],
+  kyc: ["compliance"],
+};
+
+export function canAccessApp(actor: RbacActor, app: AppId): boolean {
+  return APP_ACCESS[app].includes(actor.role);
+}
