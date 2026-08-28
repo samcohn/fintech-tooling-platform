@@ -9,13 +9,13 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts",
+    "db:migrate": "node --env-file=.env --import tsx scripts/migrate.ts",
+    "db:seed": "node --env-file=.env --import tsx scripts/seed.ts",
     "test": "vitest run",
     "validate:cr": "tsx scripts/validate-cr.ts",
     "demo:gate-pass": "tsx scripts/validate-cr.ts",
     "demo:gate-fail": "bash scripts/demo-gate-fail.sh",
-    "demo:stage-requests": "tsx scripts/stage-demo-requests.ts"
+    "demo:stage-requests": "node --env-file=.env --import tsx scripts/stage-demo-requests.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.4",

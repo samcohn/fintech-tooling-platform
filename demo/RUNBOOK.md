@@ -119,11 +119,32 @@ regenerates user ids and invalidates every session at once.
 
 ## 4. Slack
 
-With the webhook variables set in `.env` **before** running
-`pnpm demo:stage-requests`, the script posts real messages with real
-timestamps: app-lane notices to `#internal-tools`, platform-lane
-notices to `#platform`. Without them, notices go to
-`.devin/slack-outbox.md` (do not show that on camera).
+Put both webhook URLs in `.env` and run `pnpm demo:stage-requests`. The
+`db:migrate`, `db:seed` and `demo:stage-requests` scripts run under
+`node --env-file=.env`, so they see `.env` the same way the server does.
+A shell-exported variable still wins over the file, which is what keeps
+the scratch-database workflow in §9 working.
+
+Without URLs, notices fall through to `.devin/slack-outbox.md` — do not
+show that file on camera.
+
+Create the webhooks at Slack → Apps → Incoming Webhooks, one per
+channel. Verified message counts per staging run: **2 to
+`#internal-tools`** (triaged, then `Gates passed. PR: …`) and **6 to
+`#platform`** — the role request walks triaged → in_progress → pr_open →
+merged, and the blocked request adds triaged → blocked. For Click 6 the
+message you want is the *first* platform one, the "needs a spec" notice.
+
+Two consequences for choreography:
+
+- **Every message is posted at staging time, not at submit time.**
+  Replay writes an audit row and attaches to the staged row; it does not
+  notify. Nothing lands in Slack while you are on camera. Re-stage
+  immediately before recording if you want plausible timestamps.
+- **The blocked message is already in `#platform` before Click 9.**
+  Staging walks all three requests to their final state, so `#platform`
+  holds the role-request thread *and* the blocked thread from the start.
+  Don't scroll past the message you're talking about.
 
 The messages tag `@oncall` (app) and `@platform-owner` (platform) as
 **literal text** — the webhook sends a plain `text` payload, so Slack
@@ -132,10 +153,6 @@ need a real highlighted mention, `platform/requests/slack.ts` has to
 emit `<@U…>` for a user or `<!subteam^S…>` for a group, using real
 Slack IDs. Otherwise don't zoom in on the tag, or say "the platform
 owner" rather than implying a notification fired.
-
-To create webhooks: Slack → Apps → Incoming Webhooks → add one per
-channel, paste the two URLs into `.env`, then re-run the staging
-script.
 
 ## 5. The scripted submissions (exact text)
 
