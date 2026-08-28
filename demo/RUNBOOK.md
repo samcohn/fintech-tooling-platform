@@ -168,10 +168,52 @@ a tool they weren't in" line has nothing behind it.
 Filter to Avery to make the point, then **Clear filters** for the
 full history. Click any row for before/after JSON.
 
-## 9. Reset between takes
+## 9. Run the gates against a scratch database
+
+**Important for the Part Three audit shot.** `validate:cr` gates 2-6 run
+against a live database and insert their own fixture users — Gate Agent,
+Gate Approver, Audit Tester, Access Agent — plus real `refund.*` audit
+rows. `pnpm test` does the same. Run either against the demo database
+and the audit log's actor dropdown fills with obvious test fixtures.
+
+One-time:
+
+```sh
+psql postgres://postgres:postgres@localhost:5432/postgres \
+  -c "CREATE DATABASE gates_scratch;"
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/gates_scratch \
+  pnpm db:migrate && pnpm db:seed
+```
+
+Then run every gate command with the scratch URL:
+
+```sh
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/gates_scratch
+pnpm demo:gate-pass    # all six pass
+pnpm demo:gate-fail    # gate 1 fails, exit 1
+```
+
+Verified: gate 1 reports exactly `platform/rbac/index.ts` and nothing
+else, provided the working tree is committed first. Uncommitted
+`platform/` edits are listed alongside it and muddy the beat.
+
+Unset `DATABASE_URL` (or use a separate terminal) before touching the
+app or the staging scripts.
+
+## 10. Reset between takes
 
 ```sh
 pnpm db:seed && pnpm demo:stage-requests
+```
+
+`db:seed` truncates `audit_log`, so this also clears any fixture rows
+that leaked in. Staging writes `.devin/specs/{id}.md` and
+`.devin/blocked/{id}.md` under fresh ids each run without removing the
+previous ones, so prune the orphans if `.devin/` will be on camera —
+keep only the two ids printed by the staging run:
+
+```sh
+ls .devin/specs .devin/blocked
 ```
 
 Sign-ins survive a reseed only if user IDs are re-created identically —
@@ -184,7 +226,11 @@ they are not, so sign out/in again after reseeding.
   set — restart `pnpm dev`.
 - **Requests queue empty**: you reseeded without re-running
   `pnpm demo:stage-requests`.
-- **`ECONNREFUSED :5432`**: Postgres isn't running — `docker start pg`.
+- **`ECONNREFUSED :5432`**: Postgres isn't running — `docker start pg`,
+  or `brew services start postgresql@16` on a local install (Sam's
+  machine has no Docker CLI; Postgres is local).
+- **Audit log full of Gate Agent / Audit Tester rows**: the gates or
+  `pnpm test` ran against the demo database — see §9, then reseed.
 - **Blocked panel missing blocked.md**: the file lives at
   `.devin/blocked/{id}.md` and is written by the staging script — run
   it from the repo root.
