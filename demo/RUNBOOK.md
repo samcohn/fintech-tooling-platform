@@ -11,7 +11,6 @@ Prerequisites: Node 20+, pnpm 9, Docker.
 ```sh
 git clone https://github.com/samcohn/fintech-tooling-platform.git
 cd fintech-tooling-platform
-git checkout devin/1787629172-internal-platform   # or merge PR #1 and use main
 pnpm install
 
 # Postgres
@@ -108,10 +107,14 @@ regenerates user ids and invalidates every session at once.
   tab `/refunds`, for the role-based approval shot.
 - **Slack**: two windows side by side, `#internal-tools` and
   `#platform` (messages posted by the staging script, §4).
-- **Editor**: repo tree expanded two levels; have
-  `.devin/specs/{id}.md` and the merged PR (CODEOWNERS approval +
-  passing checks) ready to show. `{id}` is printed by
-  `pnpm demo:stage-requests` — the platform/merged line.
+- **Editor**: repo tree expanded two levels; have `.devin/specs/{id}.md`
+  ready to show. `{id}` is printed by `pnpm demo:stage-requests` — the
+  platform/merged line.
+- **PR #1 is now merged**, so the platform/merged row's link is
+  genuinely merged. Two caveats: it carries no approving review (
+  `CODEOWNERS` names `@platform-owner`, not a real GitHub account), and
+  the app-lane row links to the *same* PR while labelled "PR open". Show
+  one or the other, not both.
 - **Audit log**: `http://localhost:3000/platform/audit`, Window B only.
   Two filters (actor, action) plus **Clear filters**; both default to
   "All", so the unfiltered all-time view is what loads. 500 rows max,
