@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db/client";
@@ -16,6 +16,7 @@ import {
 } from "../devin/client";
 import { loadPlaybook, interpolate } from "../devin/playbook";
 import { notifyTriaged, notifyStatusChanged } from "./slack";
+import { findStagedMatch, normalizeRequestText, replayEnabled } from "./replay";
 
 function specExists(id: string): boolean {
   return existsSync(join(process.cwd(), ".devin", "specs", `${id}.md`));
@@ -23,7 +24,15 @@ function specExists(id: string): boolean {
 
 export type Actor = { id: string; email: string; name: string };
 
-export type ChangeRequestRow = ChangeRequest & { requesterName: string };
+export type ChangeRequestRow = ChangeRequest & {
+  requesterName: string;
+  blockedMd: string | null;
+};
+
+function readBlockedMd(id: string): string | null {
+  const p = join(process.cwd(), ".devin", "blocked", `${id}.md`);
+  return existsSync(p) ? readFileSync(p, "utf8") : null;
+}
 
 export async function listChangeRequests(): Promise<ChangeRequestRow[]> {
   const rows = await db
@@ -34,7 +43,11 @@ export async function listChangeRequests(): Promise<ChangeRequestRow[]> {
     .from(changeRequests)
     .innerJoin(users, eq(changeRequests.requestedBy, users.id))
     .orderBy(desc(changeRequests.submittedAt));
-  return rows.map((r) => ({ ...r.cr, requesterName: r.requesterName }));
+  return rows.map((r) => ({
+    ...r.cr,
+    requesterName: r.requesterName,
+    blockedMd: r.cr.status === "blocked" ? readBlockedMd(r.cr.id) : null,
+  }));
 }
 
 /**
@@ -62,6 +75,45 @@ export async function createChangeRequest(
     });
     return row;
   });
+}
+
+/**
+ * Demo replay: when DEMO_REPLAY=true and the submitted text matches a
+ * staged record (normalized), attach the submission to the staged row
+ * instead of dispatching a new Devin session. Non-matching text falls
+ * through to the normal pipeline.
+ */
+async function replayChangeRequest(
+  actor: Actor,
+  request: string
+): Promise<ChangeRequest | null> {
+  if (!replayEnabled()) return null;
+  const staged = findStagedMatch(request);
+  if (!staged) return null;
+  const norm = normalizeRequestText(staged.text);
+  const rows = await db.select().from(changeRequests);
+  const match = rows.find((r) => normalizeRequestText(r.request) === norm);
+  if (!match) return null;
+  await writeAudit(db, {
+    actorId: actor.id,
+    actorEmail: actor.email,
+    action: "change_request.submitted",
+    entityType: "change_request",
+    entityId: match.id,
+    after: { request, replayOf: match.id },
+  });
+  return match;
+}
+
+export type SubmitResult = { row: ChangeRequest; replay: boolean };
+
+export async function submitOrReplayChangeRequest(
+  actor: Actor,
+  request: string
+): Promise<SubmitResult> {
+  const replayed = await replayChangeRequest(actor, request);
+  if (replayed) return { row: replayed, replay: true };
+  return { row: await submitChangeRequest(actor, request), replay: false };
 }
 
 /**

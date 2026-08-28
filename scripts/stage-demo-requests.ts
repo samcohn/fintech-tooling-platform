@@ -1,18 +1,20 @@
 /**
- * Stages the requests queue for the demo. Idempotent-ish: clears any
- * previously staged rows first (change_request only; the audit log is
- * append-only and keeps the full history).
+ * Stages the requests queue for the demo from demo/staged-requests.json.
+ * Idempotent-ish: clears any previously staged rows first (change_request
+ * only; the audit log is append-only and keeps the full history).
  *
- * Three requests, staged so app-lane work looks fast and only
- * platform-lane work has waiting states:
+ * Three staged records:
  *
  * 1. App lane, pr_open with a live PR link — the fast path.
  * 2. Platform lane, walked through the full arc to merged, gated on a
  *    human-authored spec at .devin/specs/{id}.md.
- * 3. App lane, blocked with a named failing invariant, no PR.
+ * 3. Platform lane, blocked on the self-approval invariant, no PR;
+ *    .devin/blocked/{id}.md renders in the detail panel.
  *
  * Dispatch to Devin is deliberately skipped here — this seeds the
- * queue state for recording, it does not spawn sessions.
+ * queue state for recording, it does not spawn sessions. With
+ * DEMO_REPLAY=true, submitting matching text in the UI replays these
+ * records instead of dispatching.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -24,11 +26,10 @@ import {
   updateRequestStatusAndNotify,
   type Actor,
 } from "../platform/requests/service";
-import { classifyRequest, writeTriageFile } from "../platform/requests/triage";
+import { writeTriageFile, classifyRequest } from "../platform/requests/triage";
 import { writeAudit } from "../platform/audit";
 import { notifyTriaged } from "../platform/requests/slack";
-
-const PR_URL = "https://github.com/samcohn/fintech-tooling-platform/pull/1";
+import { loadStagedRequests, type StagedRequest } from "../platform/requests/replay";
 
 async function actorByEmail(email: string): Promise<Actor> {
   const [u] = await db.select().from(users).where(eq(users.email, email));
@@ -36,16 +37,16 @@ async function actorByEmail(email: string): Promise<Actor> {
   return { id: u.id, email: u.email, name: u.name };
 }
 
-async function triage(actor: Actor, id: string, request: string) {
-  const result = classifyRequest(request);
-  writeTriageFile(id, result);
-  const status = result.lane === "platform" ? "awaiting_spec" : "in_progress";
+async function triage(actor: Actor, id: string, staged: StagedRequest) {
+  const classified = classifyRequest(staged.text);
+  writeTriageFile(id, { ...classified, lane: staged.lane, reasoning: staged.reasoning });
+  const status = staged.lane === "platform" ? "awaiting_spec" : "in_progress";
   const [row] = await db
     .update(changeRequests)
     .set({
-      lane: result.lane,
+      lane: staged.lane,
       status,
-      classificationReasoning: result.reasoning,
+      classificationReasoning: staged.reasoning,
     })
     .where(eq(changeRequests.id, id))
     .returning();
@@ -56,44 +57,20 @@ async function triage(actor: Actor, id: string, request: string) {
     action: "change_request.triaged",
     entityType: "change_request",
     entityId: id,
-    after: { lane: result.lane, status, touchedPaths: result.touchedPaths },
+    after: { lane: staged.lane, status },
   });
   await notifyTriaged(row, actor.name);
   return row;
 }
 
-async function main() {
-  const agent = await actorByEmail("agent@demo.co");
-  const approver = await actorByEmail("approver@demo.co");
-
-  await db.delete(changeRequests);
-
-  // 1. App lane: fast path, already at pr_open with a live PR link.
-  const appReq = await createChangeRequest(
-    agent,
-    "add a chargeback reason column to the refunds queue and CSV export"
-  );
-  await triage(agent, appReq.id, appReq.request);
-  await updateRequestStatusAndNotify(agent, appReq.id, {
-    status: "pr_open",
-    prUrl: PR_URL,
-  });
-
-  // 2. Platform lane: the real role-based approval request, full arc.
-  const platReq = await createChangeRequest(
-    approver,
-    "we need approvers assigned by role, not just by amount."
-  );
-  await triage(approver, platReq.id, platReq.request);
-
-  // Platform owner authors the spec; only then does work begin.
+function writeSpec(id: string, staged: StagedRequest) {
   const specDir = join(process.cwd(), ".devin", "specs");
   mkdirSync(specDir, { recursive: true });
   writeFileSync(
-    join(specDir, `${platReq.id}.md`),
+    join(specDir, `${id}.md`),
     `# Spec — role-based approver assignment
 
-Request: "we need approvers assigned by role, not just by amount."
+Request: "${staged.text}"
 
 ## Interface
 
@@ -118,34 +95,80 @@ Extend the approval primitive in \`platform/rbac\`:
   unchanged — this is the proof that platform changes are isolated.
 `
   );
+}
 
-  await updateRequestStatusAndNotify(approver, platReq.id, {
-    status: "in_progress",
-  });
-  await updateRequestStatusAndNotify(approver, platReq.id, {
-    status: "pr_open",
-    prUrl: PR_URL,
-  });
-  await updateRequestStatusAndNotify(approver, platReq.id, {
-    status: "merged",
-  });
+function writeBlockedMd(id: string, staged: StagedRequest) {
+  const dir = join(process.cwd(), ".devin", "blocked");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${id}.md`),
+    `# Blocked — change request ${id}
 
-  // 3. App lane: blocked on a named invariant, no PR.
-  const blockedReq = await createChangeRequest(
-    agent,
-    "let agents approve their own refund recommendations under $2,000 to speed up the queue"
+Request: "${staged.text}"
+
+## Why this cannot proceed
+
+The request asks for agents to commit their own refund recommendations
+below $2,000. That contradicts the self-approval prohibition in
+\`platform/rbac\` (\`canCommit\`): **no actor may commit their own
+recommendation, at any amount**.
+
+The prohibition is enforced in three places, all of which would fail:
+
+1. \`platform/rbac\` unit tests (self-approval rejection).
+2. The authorization-invariants gate in \`pnpm validate:cr\`.
+3. The server-side transition handler, which resolves the rule from
+   session identity, never from request input.
+
+## Disposition
+
+No PR opened. Satisfying this request requires deleting a named
+invariant, which is outside both lanes' authority. If the business
+wants a below-amount self-approval carve-out, that is a policy decision
+for the platform owners, made in a spec, not a change request.
+`
   );
-  await triage(agent, blockedReq.id, blockedReq.request);
-  await updateRequestStatusAndNotify(agent, blockedReq.id, {
-    status: "blocked",
-    blockedReason:
-      "self-approval prohibition (platform/rbac canCommit): no actor may commit their own recommendation at any amount",
-  });
+}
 
-  console.log("Staged 3 demo requests:");
-  console.log(`  app/pr_open   ${appReq.id}`);
-  console.log(`  platform/merged ${platReq.id}`);
-  console.log(`  app/blocked   ${blockedReq.id}`);
+async function main() {
+  const staged = loadStagedRequests();
+
+  await db.delete(changeRequests);
+
+  for (const s of staged) {
+    const actor = await actorByEmail(s.requester);
+    const req = await createChangeRequest(actor, s.text);
+    await triage(actor, req.id, s);
+
+    if (s.spec) writeSpec(req.id, s);
+    if (s.blockedMd) writeBlockedMd(req.id, s);
+
+    if (s.status === "merged") {
+      // Full platform arc: spec authored, work runs, PR opens, merges.
+      await updateRequestStatusAndNotify(actor, req.id, {
+        status: "in_progress",
+      });
+      await updateRequestStatusAndNotify(actor, req.id, {
+        status: "pr_open",
+        prUrl: s.prUrl,
+      });
+      await updateRequestStatusAndNotify(actor, req.id, { status: "merged" });
+    } else if (s.status === "blocked") {
+      await updateRequestStatusAndNotify(actor, req.id, {
+        status: "blocked",
+        blockedReason: s.blockedReason,
+      });
+    } else {
+      await updateRequestStatusAndNotify(actor, req.id, {
+        status: s.status,
+        prUrl: s.prUrl ?? null,
+      });
+    }
+
+    console.log(`  ${s.lane}/${s.status}  ${req.id}  "${s.text}"`);
+  }
+
+  console.log(`Staged ${staged.length} demo requests.`);
 }
 
 main()

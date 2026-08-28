@@ -59,6 +59,8 @@ describe("app access", () => {
       );
     expect(rows).toHaveLength(1);
     expect(rows[0]?.actorEmail).toBe(agent.email);
+    expect(rows[0]?.before).toBeNull();
+    expect(rows[0]?.after).toBeNull();
   });
 
   it("grants compliance the kyc app without auditing a denial", async () => {

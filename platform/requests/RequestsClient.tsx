@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@platform/ui";
 
@@ -14,7 +14,11 @@ export type RequestDto = {
   prUrl: string | null;
   blockedReason: string | null;
   classificationReasoning: string | null;
+  blockedMd: string | null;
 };
+
+/** One beat on `triaging` before a replayed row resolves. */
+const REPLAY_BEAT_MS = 1200;
 
 function LanePill({ lane }: { lane: RequestDto["lane"] }) {
   if (!lane) return <span className="k-cell-faint">—</span>;
@@ -28,6 +32,14 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [replayingId, setReplayingId] = useState<string | null>(null);
+  const replayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (replayTimer.current) clearTimeout(replayTimer.current);
+    },
+    []
+  );
 
   const open = rows.find((r) => r.id === openId) ?? null;
 
@@ -48,10 +60,31 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
       setError(data?.error ?? "Could not submit request");
       return;
     }
-    const created = (await res.json()) as RequestDto;
-    setRows((rs) => [created, ...rs]);
+    const created = (await res.json()) as RequestDto & { replay?: boolean };
     setText("");
+    if (created.replay) {
+      // Attached to a staged record: hold on `triaging` for one beat,
+      // then resolve to the staged final state.
+      setRows((rs) => {
+        const existing = rs.find((r) => r.id === created.id);
+        const rest = rs.filter((r) => r.id !== created.id);
+        return [existing ?? { ...created, blockedMd: null }, ...rest];
+      });
+      setReplayingId(created.id);
+      replayTimer.current = setTimeout(() => {
+        setReplayingId(null);
+        router.refresh();
+      }, REPLAY_BEAT_MS);
+      return;
+    }
+    setRows((rs) => [{ ...created, blockedMd: null }, ...rs]);
     router.refresh();
+  }
+
+  function displayed(r: RequestDto): RequestDto {
+    return r.id === replayingId
+      ? { ...r, status: "triaging", lane: null, prUrl: null, blockedReason: null }
+      : r;
   }
 
   return (
@@ -90,7 +123,7 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {rows.map(displayed).map((r) => (
             <tr
               key={r.id}
               data-selected={r.id === openId}
@@ -164,6 +197,12 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
               <>
                 <dt>Blocked</dt>
                 <dd>{open.blockedReason}</dd>
+              </>
+            ) : null}
+            {open.blockedMd ? (
+              <>
+                <dt>blocked.md</dt>
+                <dd style={{ whiteSpace: "pre-wrap" }}>{open.blockedMd}</dd>
               </>
             ) : null}
             <dt>Classification</dt>

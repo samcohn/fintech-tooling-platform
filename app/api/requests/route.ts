@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getActor } from "@platform/auth";
 import {
   listChangeRequests,
-  submitChangeRequest,
+  submitOrReplayChangeRequest,
 } from "@platform/requests/service";
 
 const bodySchema = z.object({
@@ -27,10 +27,14 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
-  const row = await submitChangeRequest(actor, parsed.data.request);
+  const { row, replay } = await submitOrReplayChangeRequest(
+    actor,
+    parsed.data.request
+  );
   return NextResponse.json({
     ...row,
     requesterName: actor.name,
     submittedAt: row.submittedAt.toISOString(),
+    replay,
   });
 }

@@ -88,7 +88,14 @@ async function main() {
     email?: string;
     recommendedBy?: string;
     committedBy?: string;
+    hoursAgo?: number;
   }> = [
+    // Demo rows, newest first so they sit at the top of the queue:
+    // $750 pending (above threshold — Recommend for an agent),
+    // $499 pending (below threshold — Approve for the same agent),
+    // and a recommended row awaiting the role-assigned approver.
+    { amount: 75_000, reason: "billing_error", status: "pending", hoursAgo: 1 },
+    { amount: 49_900, reason: "duplicate_charge", status: "pending", hoursAgo: 2 },
     { amount: 8_450, reason: "duplicate_charge", status: "pending" },
     { amount: 187_500, reason: "billing_error", status: "pending" },
     {
@@ -96,6 +103,7 @@ async function main() {
       reason: "customer_request",
       status: "recommended",
       recommendedBy: agent.id,
+      hoursAgo: 3,
     },
     {
       amount: 64_300,
@@ -140,12 +148,53 @@ async function main() {
       committedBy: f.committedBy ?? null,
       status: f.status,
       idempotencyKey: `idem_${chargeId}`,
-      createdAt: new Date(
-        now - Math.floor(rand(p * 2 + 900) * 13) * 86_400_000 -
-          p * 5 * 3_600_000
-      ),
+      createdAt:
+        f.hoursAgo !== undefined
+          ? new Date(now - f.hoursAgo * 3_600_000)
+          : new Date(
+              now - Math.floor(rand(p * 2 + 900) * 13) * 86_400_000 -
+                p * 5 * 3_600_000
+            ),
     });
   });
+
+  // Two refunds against one charge, one settled — the double-refund
+  // invariant made visible. Sum stays under the charge amount.
+  {
+    const chargeId = "ch_0999";
+    const email = "dana.whitfield@gmail.com";
+    chargeRows.push({ id: chargeId, customerEmail: email, amountCents: 28_400 });
+    refundRows.push({
+      chargeId,
+      customerEmail: email,
+      cardLast4: "4177",
+      billingAddress: `312 ${pick(STREETS, 3)}, ${pick(CITIES, 3)}`,
+      amountCents: 9_900,
+      currency: "USD",
+      reasonCode: "subscription_canceled",
+      requestedBy: agent2.id,
+      recommendedBy: null,
+      committedBy: approver.id,
+      status: "settled",
+      idempotencyKey: `idem_${chargeId}_a`,
+      createdAt: new Date(now - 5 * 3_600_000),
+    });
+    refundRows.push({
+      chargeId,
+      customerEmail: email,
+      cardLast4: "4177",
+      billingAddress: `312 ${pick(STREETS, 3)}, ${pick(CITIES, 3)}`,
+      amountCents: 12_500,
+      currency: "USD",
+      reasonCode: "billing_error",
+      requestedBy: agent.id,
+      recommendedBy: null,
+      committedBy: null,
+      status: "pending",
+      idempotencyKey: `idem_${chargeId}_b`,
+      createdAt: new Date(now - 4 * 3_600_000),
+    });
+  }
 
   // 188 more spread across statuses with a realistic amount
   // distribution and dates across ~14 days.

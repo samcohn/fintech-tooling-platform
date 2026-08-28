@@ -19,7 +19,8 @@ export async function resolveAppAccess(
     action: "access_denied",
     entityType: "app",
     entityId: app,
-    after: { role: actor.role },
+    before: null,
+    after: null,
   });
   return false;
 }

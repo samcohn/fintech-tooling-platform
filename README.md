@@ -89,6 +89,7 @@ To see the access boundary: sign in as `agent@demo.co` and open `/kyc`.
 | `SLACK_WEBHOOK_INTERNAL_TOOLS` | app-lane notices go to `.devin/slack-outbox.md` |
 | `SLACK_WEBHOOK_PLATFORM` | platform-lane notices go to `.devin/slack-outbox.md` |
 | `REFUND_APPROVAL_THRESHOLD_CENTS` | defaults to 50000 |
+| `DEMO_REPLAY` | submissions always dispatch; set `true` so text matching `demo/staged-requests.json` replays the staged final state (with a 1.2s triaging beat) instead of spawning a session |
 
 ## Keyboard shortcuts
 

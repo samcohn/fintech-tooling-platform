@@ -28,6 +28,7 @@ export default async function RequestsPage() {
           prUrl: r.prUrl,
           blockedReason: r.blockedReason,
           classificationReasoning: r.classificationReasoning,
+          blockedMd: r.blockedMd,
         }))}
       />
     </main>
