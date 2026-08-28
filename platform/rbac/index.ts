@@ -83,7 +83,7 @@ export function canCommit(
   return true;
 }
 
-export type AppId = "refunds" | "kyc";
+export type AppId = "refunds" | "kyc" | "audit";
 
 /**
  * App-level access groups, resolved at the platform layer before an
@@ -92,6 +92,7 @@ export type AppId = "refunds" | "kyc";
 const APP_ACCESS: Record<AppId, Role[]> = {
   refunds: ["agent", "approver", "compliance"],
   kyc: ["compliance"],
+  audit: ["compliance"],
 };
 
 export function canAccessApp(actor: RbacActor, app: AppId): boolean {

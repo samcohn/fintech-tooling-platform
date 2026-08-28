@@ -15,6 +15,7 @@ export type RequestDto = {
   blockedReason: string | null;
   classificationReasoning: string | null;
   blockedMd: string | null;
+  specMd: string | null;
 };
 
 /** One beat on `triaging` before a replayed row resolves. */
@@ -68,7 +69,7 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
       setRows((rs) => {
         const existing = rs.find((r) => r.id === created.id);
         const rest = rs.filter((r) => r.id !== created.id);
-        return [existing ?? { ...created, blockedMd: null }, ...rest];
+        return [existing ?? { ...created, blockedMd: null, specMd: null }, ...rest];
       });
       setReplayingId(created.id);
       replayTimer.current = setTimeout(() => {
@@ -77,7 +78,7 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
       }, REPLAY_BEAT_MS);
       return;
     }
-    setRows((rs) => [{ ...created, blockedMd: null }, ...rs]);
+    setRows((rs) => [{ ...created, blockedMd: null, specMd: null }, ...rs]);
     router.refresh();
   }
 
@@ -203,6 +204,12 @@ export function RequestsClient({ initialRows }: { initialRows: RequestDto[] }) {
               <>
                 <dt>blocked.md</dt>
                 <dd style={{ whiteSpace: "pre-wrap" }}>{open.blockedMd}</dd>
+              </>
+            ) : null}
+            {open.specMd ? (
+              <>
+                <dt>Spec (human-authored)</dt>
+                <dd style={{ whiteSpace: "pre-wrap" }}>{open.specMd}</dd>
               </>
             ) : null}
             <dt>Classification</dt>

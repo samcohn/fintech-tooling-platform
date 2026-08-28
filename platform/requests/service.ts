@@ -27,10 +27,16 @@ export type Actor = { id: string; email: string; name: string };
 export type ChangeRequestRow = ChangeRequest & {
   requesterName: string;
   blockedMd: string | null;
+  specMd: string | null;
 };
 
 function readBlockedMd(id: string): string | null {
   const p = join(process.cwd(), ".devin", "blocked", `${id}.md`);
+  return existsSync(p) ? readFileSync(p, "utf8") : null;
+}
+
+function readSpecMd(id: string): string | null {
+  const p = join(process.cwd(), ".devin", "specs", `${id}.md`);
   return existsSync(p) ? readFileSync(p, "utf8") : null;
 }
 
@@ -47,6 +53,7 @@ export async function listChangeRequests(): Promise<ChangeRequestRow[]> {
     ...r.cr,
     requesterName: r.requesterName,
     blockedMd: r.cr.status === "blocked" ? readBlockedMd(r.cr.id) : null,
+    specMd: readSpecMd(r.cr.id),
   }));
 }
 

@@ -35,7 +35,7 @@ export default async function RootLayout({
           <aside className="k-side">
             <SideNav />
             <span className="spacer" />
-            <Link href="/admin/change-request" className="k-cr-btn">
+            <Link href="/platform/requests" className="k-cr-btn">
               Request a change
             </Link>
             <div className="k-who">

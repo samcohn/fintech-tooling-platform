@@ -1,6 +1,6 @@
 [
   {
-    "requester": "agent@demo.co",
+    "requester": "compliance@demo.co",
     "text": "Add a column showing prior refund count",
     "lane": "app",
     "status": "pr_open",
@@ -8,7 +8,7 @@
     "reasoning": "Classified app lane. The change is a read-only display column on the refunds queue: a per-customer prior refund count derived from existing refund_request rows. Touched paths are confined to /apps/refunds (queries.ts aggregate + QueueClient column). No platform primitive, schema, or authorization rule changes. Dispatched under playbooks/app-change.md; pnpm validate:cr must exit 0 before a PR opens."
   },
   {
-    "requester": "approver@demo.co",
+    "requester": "compliance@demo.co",
     "text": "We need approvers assigned by role, not just by amount",
     "lane": "platform",
     "status": "merged",
@@ -17,8 +17,8 @@
     "reasoning": "Classified platform lane. The request changes who may commit an approval — an authorization rule, owned by /platform/rbac. Any diff here is gated: a human-authored spec at .devin/specs/{id}.md must exist before work starts, the full invariant suite must pass, and CODEOWNERS review on /platform is required. Merges are never unattended in this lane."
   },
   {
-    "requester": "agent@demo.co",
-    "text": "Let agents approve their own refunds up to two thousand dollars",
+    "requester": "compliance@demo.co",
+    "text": "Let agents approve their own refunds up to $2,000",
     "lane": "platform",
     "status": "blocked",
     "blockedReason": "self-approval prohibition (platform/rbac canCommit): no actor may commit their own recommendation at any amount",

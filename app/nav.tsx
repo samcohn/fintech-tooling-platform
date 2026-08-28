@@ -15,7 +15,10 @@ const SECTIONS = [
   },
   {
     label: "Platform",
-    items: [{ href: "/platform/requests", label: "Change requests" }],
+    items: [
+      { href: "/platform/requests", label: "Change requests" },
+      { href: "/platform/audit", label: "Audit log" },
+    ],
   },
 ];
 
