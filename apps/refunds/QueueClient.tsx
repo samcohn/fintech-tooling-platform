@@ -49,14 +49,17 @@ function useCountUp(target: number, enabled: boolean): number {
       setValue(target);
       return;
     }
-    done.current = true;
     const startAt = performance.now();
     let raf = 0;
     const tick = (now: number) => {
       const p = Math.min((now - startAt) / 750, 1);
       const eased = 1 - Math.pow(1 - p, 3);
       setValue(Math.round(target * eased));
+      // Latch on completion, not on start: Strict Mode's dev double-
+      // invoke cancels the first run, and latching early meant the
+      // second run saw `done` and snapped to the final value.
       if (p < 1) raf = requestAnimationFrame(tick);
+      else done.current = true;
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
